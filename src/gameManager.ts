@@ -25,7 +25,7 @@ export class GameManager {
     return this.deepCopy();
   }
 
-  loadGame(data: GameFile): void {
+  loadGame(data: GameFile, startRoundIndex = 0): void {
     const teams = { team1: this.state.team1.name, team2: this.state.team2.name };
     this.state = defaultState();
     this.state.gameTitle = data.title || 'Family Feud';
@@ -36,6 +36,9 @@ export class GameManager {
       answers: r.answers.map(a => ({ text: a.text, points: a.points, revealed: false })),
     }));
     this.state.loaded = this.state.rounds.length > 0;
+    if (this.state.loaded) {
+      this.state.currentRoundIndex = Math.max(0, Math.min(startRoundIndex, this.state.rounds.length - 1));
+    }
     this.emit();
   }
 

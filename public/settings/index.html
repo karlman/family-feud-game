@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Feud — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/control/style.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+
+<header id="topbar">
+  <div id="topbar-title">⚙ SETTINGS</div>
+  <div id="topbar-right">
+    <a href="/control" class="nav-link">🎮 Game Control</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ═══ LIST VIEW ═══ -->
+  <div id="view-list">
+    <div class="list-header">
+      <h2 class="view-title" style="border:none;padding:0">QUESTION SETS</h2>
+      <button class="btn btn-blue" onclick="newSet()">+ NEW SET</button>
+    </div>
+    <div id="sets-container">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+  <!-- ═══ EDITOR VIEW ═══ -->
+  <div id="view-editor" class="hidden">
+    <div class="list-header">
+      <h2 class="view-title" style="border:none;padding:0" id="editor-heading">NEW QUESTION SET</h2>
+      <button class="btn btn-dim" onclick="cancelEdit()">✕ Cancel</button>
+    </div>
+
+    <div class="form-section">
+      <label class="field-label">TITLE <span class="required">*</span></label>
+      <input id="ed-title" type="text" placeholder="e.g. Holiday Party 2024">
+
+      <label class="field-label" style="margin-top:12px">DESCRIPTION</label>
+      <input id="ed-desc" type="text" placeholder="Optional notes about this set">
+
+      <label class="field-label" style="margin-top:12px">SOURCE</label>
+      <input id="ed-source" type="text" placeholder="e.g. Family survey, TV show Season 3">
+
+      <label class="field-label" style="margin-top:12px">DATE COLLECTED</label>
+      <input id="ed-date" type="date">
+    </div>
+
+    <div class="section-divider">
+      <span>ROUNDS</span>
+    </div>
+
+    <div id="rounds-container"></div>
+
+    <button class="btn btn-dim full-btn" onclick="addRound()">+ ADD ROUND</button>
+
+    <div class="section-divider">
+      <span>IMPORT FROM JSON FILE</span>
+    </div>
+    <div class="import-row">
+      <label class="btn btn-dim" for="import-file">📂 Choose JSON File</label>
+      <input type="file" id="import-file" accept=".json" onchange="importJson(this)">
+      <span id="import-filename" class="muted">No file chosen</span>
+    </div>
+    <p class="muted" style="font-size:12px">Importing fills in rounds &amp; answers from a JSON file. Add metadata above and save.</p>
+
+    <div class="save-row">
+      <button class="btn btn-dim flex-1" onclick="cancelEdit()">Cancel</button>
+      <button class="btn btn-blue flex-1" onclick="saveSet()">💾 Save Set</button>
+    </div>
+  </div>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

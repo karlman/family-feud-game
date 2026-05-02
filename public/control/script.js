@@ -1,81 +1,191 @@
 // ── Socket ────────────────────────────────────────────────────────────────────
 const socket = io();
 let state = null;
+let showingPicker = false;  // true until first state arrives or user forces picker
 
 socket.on('connect',    () => setDot(true));
 socket.on('disconnect', () => setDot(false));
 
 socket.on('state:update', s => {
   state = s;
+  if (!s.loaded) showingPicker = true;
   applyState(s);
 });
 
 socket.on('arduino:ringer', player => {
   toast(`🔔 Podium ${player} buzzed in!`);
-  document.getElementById('card-play').classList.add('ringer-flash');
-  setTimeout(() => document.getElementById('card-play').classList.remove('ringer-flash'), 900);
 });
 
-function emit(event, data) {
-  socket.emit(event, data);
-}
+function emit(event, data) { socket.emit(event, data); }
 
-// ── State rendering ───────────────────────────────────────────────────────────
+// ── View routing ──────────────────────────────────────────────────────────────
 function applyState(s) {
-  // Status strip
-  const roundLabel = s.loaded
-    ? `${s.currentRoundIndex + 1} / ${s.rounds.length}`
-    : '—';
-  setText('stat-round',   roundLabel);
-  setText('stat-phase',   s.phase);
-  setText('stat-active',  s.activePlayer === 0 ? '—' : `P${s.activePlayer}`);
-  setText('stat-strikes', s.strikes);
-  setText('stat-points',  s.roundPoints);
+  updateStatusStrip(s);
 
-  // Award points labels
-  setText('award-pts', s.roundPoints);
-  setText('award-t1',  s.team1.name);
-  setText('award-t2',  s.team2.name);
-  setText('p1-name-btn', s.team1.name ? `(${s.team1.name})` : '');
-  setText('p2-name-btn', s.team2.name ? `(${s.team2.name})` : '');
-
-  // Active player highlight
-  toggle('btn-p1', 'active', s.activePlayer === 1);
-  toggle('btn-p2', 'active', s.activePlayer === 2);
-
-  // Prefill team inputs if empty
-  const t1 = document.getElementById('inp-t1');
-  const t2 = document.getElementById('inp-t2');
-  if (!t1.value) t1.value = s.team1.name !== 'Team 1' ? s.team1.name : '';
-  if (!t2.value) t2.value = s.team2.name !== 'Team 2' ? s.team2.name : '';
-
-  // Answers
-  const round = s.rounds[s.currentRoundIndex];
-  const answerRoundLbl = document.getElementById('answer-round-lbl');
-  if (answerRoundLbl) answerRoundLbl.textContent = round ? `— Round ${s.currentRoundIndex + 1}` : '';
-  renderAnswerList(round ? round.answers : null);
+  const view = (!s.loaded || showingPicker) ? 'picker' : s.phase;
+  showView(view);
+  updateViewContent(s, view);
 }
 
-function renderAnswerList(answers) {
-  const list = document.getElementById('answer-list');
-  if (!answers) {
-    list.innerHTML = '<p class="muted">Load a game to see answers.</p>';
-    return;
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  const el = document.getElementById('view-' + name);
+  if (el) el.classList.remove('hidden');
+}
+
+function showPicker() {
+  showingPicker = true;
+  if (state) applyState(state);
+}
+
+// ── Status strip ──────────────────────────────────────────────────────────────
+function updateStatusStrip(s) {
+  setText('stat-round', s.loaded ? `${s.currentRoundIndex + 1}/${s.rounds.length}` : '—');
+  setText('stat-strikes', s.strikes);
+  setText('stat-t1-name', s.team1.name);
+  setText('stat-t2-name', s.team2.name);
+  setText('stat-t1-score', s.team1.score);
+  setText('stat-t2-score', s.team2.score);
+
+  const strikeEl = document.getElementById('stat-strikes');
+  if (strikeEl) strikeEl.className = 'stat-val strikes-val' + (s.strikes > 0 ? ' has-strikes' : '');
+}
+
+// ── View content ──────────────────────────────────────────────────────────────
+function updateViewContent(s, view) {
+  const round = s.rounds[s.currentRoundIndex];
+
+  if (view === 'picker') {
+    const t1 = document.getElementById('inp-t1');
+    const t2 = document.getElementById('inp-t2');
+    if (t1 && !t1.value) t1.value = s.team1.name !== 'Team 1' ? s.team1.name : '';
+    if (t2 && !t2.value) t2.value = s.team2.name !== 'Team 2' ? s.team2.name : '';
   }
 
+  if (view === 'idle') {
+    setText('idle-round-badge', `ROUND ${s.currentRoundIndex + 1} OF ${s.rounds.length}`);
+    setText('idle-question', round ? round.question : '');
+  }
+
+  if (view === 'buzzin') {
+    setText('buzzin-question', round ? round.question : '');
+    setText('buzz-t1-name', s.team1.name);
+    setText('buzz-t2-name', s.team2.name);
+  }
+
+  if (view === 'playing') {
+    setText('play-round-badge', `R${s.currentRoundIndex + 1}`);
+    setText('play-active-label', s.activePlayer > 0
+      ? (s.activePlayer === 1 ? s.team1.name : s.team2.name) + ' answering'
+      : 'Answering');
+    setText('play-question', round ? round.question : '');
+    renderStrikes(s.strikes);
+    renderAnswerList(round ? round.answers : []);
+  }
+
+  if (view === 'roundover') {
+    const hasPoints = s.roundPoints > 0;
+    setText('award-pts', s.roundPoints);
+    setText('award-btn-1', `→ ${s.team1.name}`);
+    setText('award-btn-2', `→ ${s.team2.name}`);
+    const awardSection = document.getElementById('award-section');
+    if (awardSection) awardSection.style.display = hasPoints ? '' : 'none';
+
+    const isLastRound = s.currentRoundIndex >= s.rounds.length - 1;
+    setText('btn-next-round', isLastRound ? 'END GAME ⏹' : 'NEXT ROUND ⏭');
+
+    document.getElementById('roundover-scores').innerHTML = scoreHTML(s);
+  }
+
+  if (view === 'gameover') {
+    document.getElementById('final-scores').innerHTML = scoreHTML(s);
+    const t1 = s.team1.score, t2 = s.team2.score;
+    const winner = t1 > t2 ? s.team1.name : t2 > t1 ? s.team2.name : null;
+    setText('winner-label', winner ? `🏆 ${winner} wins!` : "🏆 It's a tie!");
+  }
+}
+
+// ── Answers ───────────────────────────────────────────────────────────────────
+function renderAnswerList(answers) {
+  const list = document.getElementById('answer-list');
+  if (!answers.length) { list.innerHTML = ''; return; }
+
   list.innerHTML = answers.map((a, i) => `
-    <div class="answer-row ${a.revealed ? 'revealed' : ''}" id="arow-${i}">
+    <div class="answer-row ${a.revealed ? 'revealed' : ''}">
       <div class="answer-num">${i + 1}</div>
       <div class="answer-text">${escHtml(a.text)}</div>
       <div class="answer-pts">${a.points}</div>
       ${a.revealed
-        ? '<span class="muted" style="font-size:18px">✓</span>'
+        ? '<span class="revealed-check">✓</span>'
         : `<button class="btn btn-blue reveal-btn" onclick="emit('game:revealAnswer', ${i})">REVEAL</button>`
       }
     </div>`).join('');
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
+function renderStrikes(count) {
+  const el = document.getElementById('play-strikes');
+  if (!el) return;
+  el.textContent = count > 0 ? '✗'.repeat(count) : '';
+  el.className = 'strike-display' + (count >= 3 ? ' max-strikes' : '');
+}
+
+function scoreHTML(s) {
+  return `
+    <div class="score-row">
+      <span class="score-name">${escHtml(s.team1.name)}</span>
+      <span class="score-pts">${s.team1.score}</span>
+    </div>
+    <div class="score-row">
+      <span class="score-name">${escHtml(s.team2.name)}</span>
+      <span class="score-pts">${s.team2.score}</span>
+    </div>`;
+}
+
+// ── Picker actions ────────────────────────────────────────────────────────────
+async function loadSets() {
+  try {
+    const sets = await fetch('/api/sets').then(r => r.json());
+    const sel = document.getElementById('set-select');
+    if (!sets.length) {
+      sel.innerHTML = '<option value="">— No sets saved. Go to Settings. —</option>';
+    } else {
+      sel.innerHTML = '<option value="">— Choose a question set —</option>'
+        + sets.map(s => `<option value="${s.id}">${escHtml(s.title)}${s.source ? ' (' + escHtml(s.source) + ')' : ''}</option>`).join('');
+    }
+  } catch { /* server may not be ready yet */ }
+}
+
+document.getElementById('set-select').addEventListener('change', async function () {
+  const setId = this.value;
+  const roundSel = document.getElementById('round-select');
+  if (!setId) {
+    roundSel.innerHTML = '<option value="0">— select a set first —</option>';
+    roundSel.disabled = true;
+    return;
+  }
+  try {
+    const data = await fetch(`/api/sets/${setId}`).then(r => r.json());
+    if (!data.rounds.length) {
+      roundSel.innerHTML = '<option value="0">No rounds in this set</option>';
+      roundSel.disabled = true;
+    } else {
+      roundSel.disabled = false;
+      roundSel.innerHTML = data.rounds.map((r, i) =>
+        `<option value="${i}">Round ${i + 1}: ${escHtml(r.question.substring(0, 55))}</option>`
+      ).join('');
+    }
+  } catch { toast('Failed to load set details', true); }
+});
+
+function loadSelectedSet() {
+  const setId = parseInt(document.getElementById('set-select').value);
+  const startRoundIndex = parseInt(document.getElementById('round-select').value) || 0;
+  if (!setId) { toast('Choose a question set first', true); return; }
+  emit('game:loadSet', { setId, startRoundIndex });
+  showingPicker = false;
+}
+
+// ── Team names ────────────────────────────────────────────────────────────────
 function setTeams() {
   const t1 = document.getElementById('inp-t1').value.trim() || 'Team 1';
   const t2 = document.getElementById('inp-t2').value.trim() || 'Team 2';
@@ -90,110 +200,14 @@ function confirmReset() {
   }
 }
 
-// ── File upload ───────────────────────────────────────────────────────────────
-function uploadFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  document.getElementById('file-name').textContent = file.name;
-
-  const fd = new FormData();
-  fd.append('file', file);
-
-  fetch('/api/upload', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(data => {
-      if (data.error) { toast('Error: ' + data.error, true); return; }
-      toast(`Loaded "${data.title}" — ${data.rounds} rounds`);
-    })
-    .catch(() => toast('Upload failed', true));
-
-  input.value = '';
-}
-
-// ── Manual entry ──────────────────────────────────────────────────────────────
-let manualRoundCount = 0;
-
-function addRound() {
-  manualRoundCount++;
-  const idx = manualRoundCount;
-  const container = document.getElementById('manual-rounds');
-
-  const div = document.createElement('div');
-  div.className = 'manual-round';
-  div.id = `mround-${idx}`;
-  div.innerHTML = `
-    <div class="manual-round-header">
-      <strong style="color:var(--gold);font-size:13px">ROUND ${idx}</strong>
-      <input type="text" placeholder="Question text" id="mq-${idx}" style="flex:1">
-      <button class="btn btn-danger" style="padding:6px 10px;font-size:12px"
-        onclick="document.getElementById('mround-${idx}').remove()">✕</button>
-    </div>
-    <div class="manual-answers" id="mans-${idx}"></div>
-    <button class="btn btn-dim" style="font-size:12px;padding:7px 12px"
-      onclick="addAnswer(${idx})">+ Answer</button>`;
-
-  container.appendChild(div);
-  // Pre-add 5 answer rows
-  for (let i = 0; i < 5; i++) addAnswer(idx);
-}
-
-let answerCounters = {};
-function addAnswer(roundIdx) {
-  answerCounters[roundIdx] = (answerCounters[roundIdx] || 0) + 1;
-  const aIdx = answerCounters[roundIdx];
-  const container = document.getElementById(`mans-${roundIdx}`);
-  if (!container) return;
-
-  const row = document.createElement('div');
-  row.className = 'answer-input-row';
-  row.id = `mans-${roundIdx}-${aIdx}`;
-  row.innerHTML = `
-    <span style="color:var(--muted);font-size:14px;width:20px;text-align:right">${aIdx}</span>
-    <input type="text"   placeholder="Answer text" id="mat-${roundIdx}-${aIdx}">
-    <input type="number" placeholder="Pts" min="1" max="999" id="map-${roundIdx}-${aIdx}">
-    <button class="btn btn-dim" style="padding:6px 8px;font-size:11px"
-      onclick="document.getElementById('mans-${roundIdx}-${aIdx}').remove()">✕</button>`;
-
-  container.appendChild(row);
-}
-
-function loadManual() {
-  const title = document.getElementById('inp-title').value.trim() || 'Family Feud';
-  const rounds = [];
-
-  document.querySelectorAll('.manual-round').forEach(rDiv => {
-    const id = rDiv.id.replace('mround-', '');
-    const question = document.getElementById(`mq-${id}`)?.value.trim();
-    if (!question) return;
-
-    const answers = [];
-    rDiv.querySelectorAll('.answer-input-row').forEach(aRow => {
-      const aId = aRow.id.replace(`mans-${id}-`, '');
-      const text   = document.getElementById(`mat-${id}-${aId}`)?.value.trim();
-      const points = parseInt(document.getElementById(`map-${id}-${aId}`)?.value || '0', 10);
-      if (text && points > 0) answers.push({ text, points });
-    });
-
-    if (answers.length) rounds.push({ question, answers });
-  });
-
-  if (!rounds.length) { toast('Add at least one round with answers', true); return; }
-  emit('game:load', { title, rounds });
-  toast(`Loaded "${title}" — ${rounds.length} rounds`);
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function setText(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = String(val);
 }
 
-function toggle(id, cls, on) {
-  document.getElementById(id)?.classList.toggle(cls, on);
-}
-
 function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function setDot(online) {
@@ -211,3 +225,6 @@ function toast(msg, isError = false) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadSets();

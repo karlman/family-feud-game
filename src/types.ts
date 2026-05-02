@@ -36,21 +36,22 @@ export interface GameState {
 }
 
 export interface ClientToServerEvents {
-  'game:load': (data: GameFile) => void;
-  'game:setTeams': (data: { team1: string; team2: string }) => void;
-  'game:startBuzzin': () => void;
+  'game:load':            (data: GameFile) => void;
+  'game:loadSet':         (data: { setId: number; startRoundIndex: number }) => void;
+  'game:setTeams':        (data: { team1: string; team2: string }) => void;
+  'game:startBuzzin':     () => void;
   'game:setActivePlayer': (player: ActivePlayer) => void;
-  'game:revealAnswer': (index: number) => void;
-  'game:addStrike': () => void;
-  'game:awardPoints': (team: 1 | 2) => void;
-  'game:nextRound': () => void;
-  'game:resetRound': () => void;
-  'game:resetGame': () => void;
-  'game:playSound': (sound: string) => void;
+  'game:revealAnswer':    (index: number) => void;
+  'game:addStrike':       () => void;
+  'game:awardPoints':     (team: 1 | 2) => void;
+  'game:nextRound':       () => void;
+  'game:resetRound':      () => void;
+  'game:resetGame':       () => void;
+  'game:playSound':       (sound: string) => void;
 }
 
 export interface ServerToClientEvents {
-  'state:update': (state: GameState) => void;
-  'arduino:ringer': (player: 1 | 2) => void;
-  'sound:play': (sound: string) => void;
+  'state:update':    (state: GameState) => void;
+  'arduino:ringer':  (player: 1 | 2) => void;
+  'sound:play':      (sound: string) => void;
 }

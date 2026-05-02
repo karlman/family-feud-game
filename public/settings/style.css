@@ -1,0 +1,147 @@
+/* Settings-specific styles — base theme comes from /control/style.css */
+
+#main { max-width: 700px; padding-top: 16px; padding-bottom: 40px; }
+
+.hidden { display: none !important; }
+
+.list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* ── Set cards ── */
+.set-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.set-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 6px;
+}
+
+.set-title {
+  font-size: 17px; font-weight: 700; color: var(--text);
+  flex: 1; line-height: 1.3;
+}
+
+.set-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.set-meta {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 6px;
+}
+
+.meta-tag {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  color: var(--muted);
+  background: var(--dim); border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.set-desc {
+  font-size: 13px; color: var(--muted);
+  margin-top: 4px; line-height: 1.4;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+.empty-state p { margin-bottom: 8px; }
+
+/* ── Buttons ── */
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+.btn-xs { padding: 5px 8px; font-size: 11px; }
+
+/* ── Form ── */
+.form-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex; flex-direction: column;
+}
+
+.field-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--muted); text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.required { color: #ff4444; }
+
+/* ── Section divider ── */
+.section-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 4px 0;
+}
+.section-divider::before, .section-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.section-divider span {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--muted); text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Round editor ── */
+.round-editor {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.round-editor-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+
+.round-editor-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--gold); text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.round-question { flex: 1; }
+
+.answers-editor {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 8px;
+}
+
+.answer-editor-row {
+  display: flex; align-items: center; gap: 6px;
+}
+
+.answer-editor-num {
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  width: 18px; text-align: right; flex-shrink: 0;
+}
+
+.ans-text  { flex: 1; }
+.ans-pts   { width: 64px; flex-shrink: 0; }
+
+.add-answer-btn { margin-top: 2px; }
+
+/* ── Import row ── */
+input[type="file"] { display: none; }
+
+.import-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+/* ── Save row ── */
+.save-row {
+  display: flex; gap: 8px; margin-top: 4px;
+}
+.save-row .btn { padding: 14px; font-size: 16px; }
