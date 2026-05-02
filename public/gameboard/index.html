@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920">
+  <title>Family Feud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Header ── -->
+    <div id="header">
+      <div class="team-panel" id="team1-panel">
+        <div class="team-name" id="team1-name">TEAM 1</div>
+        <div class="team-score" id="team1-score">0</div>
+      </div>
+
+      <div id="center-header">
+        <div id="game-title">FAMILY FEUD</div>
+        <div id="strikes-row">
+          <div class="strike-box" id="s1"></div>
+          <div class="strike-box" id="s2"></div>
+          <div class="strike-box" id="s3"></div>
+        </div>
+      </div>
+
+      <div class="team-panel" id="team2-panel">
+        <div class="team-name" id="team2-name">TEAM 2</div>
+        <div class="team-score" id="team2-score">0</div>
+      </div>
+    </div>
+
+    <!-- ── Question ── -->
+    <div id="question-bar">
+      <div id="question-text">SURVEY SAYS&hellip;</div>
+    </div>
+
+    <!-- ── Answer Board ── -->
+    <div id="board">
+      <div id="answers-grid"></div>
+    </div>
+
+    <!-- ── Round Points ── -->
+    <div id="points-bar">
+      <span id="points-label">THIS ROUND</span>
+      <span id="points-value">0</span>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

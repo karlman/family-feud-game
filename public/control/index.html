@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Feud — Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<!-- ── Top bar ── -->
+<header id="topbar">
+  <div id="topbar-title">🎮 FEUD CONTROL</div>
+  <div id="status-dot" title="Connection status"></div>
+</header>
+
+<!-- ── Status strip ── -->
+<div id="status-strip">
+  <div class="stat">
+    <span class="stat-label">ROUND</span>
+    <span class="stat-val" id="stat-round">—</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">PHASE</span>
+    <span class="stat-val" id="stat-phase">idle</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">ACTIVE</span>
+    <span class="stat-val" id="stat-active">—</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">STRIKES</span>
+    <span class="stat-val" id="stat-strikes">0</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">POINTS</span>
+    <span class="stat-val" id="stat-points">0</span>
+  </div>
+</div>
+
+<!-- ── Main ── -->
+<main id="main">
+
+  <!-- ═══ PLAY CONTROLS ═══ -->
+  <section class="card" id="card-play">
+    <h2>Game Flow</h2>
+    <div class="btn-row">
+      <button class="btn btn-blue"   onclick="emit('game:startBuzzin')">▶ BUZZ IN</button>
+      <button class="btn btn-purple" onclick="emit('game:nextRound')">NEXT ROUND ⏭</button>
+      <button class="btn btn-dim"    onclick="emit('game:resetRound')">↺ RESET ROUND</button>
+      <button class="btn btn-danger" onclick="confirmReset()">⚠ RESET GAME</button>
+    </div>
+
+    <!-- Active player -->
+    <div class="sub-label">SET ACTIVE PLAYER</div>
+    <div class="btn-row">
+      <button class="btn btn-p1 flex-1" id="btn-p1" onclick="emit('game:setActivePlayer', 1)">
+        PODIUM 1 <span id="p1-name-btn"></span>
+      </button>
+      <button class="btn btn-p2 flex-1" id="btn-p2" onclick="emit('game:setActivePlayer', 2)">
+        PODIUM 2 <span id="p2-name-btn"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══ STRIKE ═══ -->
+  <section class="card" id="card-strike">
+    <h2>Strike</h2>
+    <button class="btn btn-strike big-btn" onclick="emit('game:addStrike')">✗ STRIKE</button>
+  </section>
+
+  <!-- ═══ ANSWERS ═══ -->
+  <section class="card" id="card-answers">
+    <h2>Answers <span id="answer-round-lbl"></span></h2>
+    <div id="answer-list">
+      <p class="muted">Load a game to see answers.</p>
+    </div>
+  </section>
+
+  <!-- ═══ AWARD POINTS ═══ -->
+  <section class="card" id="card-award">
+    <h2>Award Round Points (<span id="award-pts">0</span> pts)</h2>
+    <div class="btn-row">
+      <button class="btn btn-green flex-1" onclick="emit('game:awardPoints', 1)">
+        → <span id="award-t1">Team 1</span>
+      </button>
+      <button class="btn btn-green flex-1" onclick="emit('game:awardPoints', 2)">
+        → <span id="award-t2">Team 2</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══ SOUNDS ═══ -->
+  <section class="card" id="card-sounds">
+    <h2>Sounds</h2>
+    <div class="btn-row wrap">
+      <button class="btn btn-dim" onclick="emit('game:playSound','theme')">🎵 Theme</button>
+      <button class="btn btn-dim" onclick="emit('game:playSound','ding')">🔔 Ding</button>
+      <button class="btn btn-dim" onclick="emit('game:playSound','wrong')">❌ Wrong</button>
+      <button class="btn btn-dim" onclick="emit('game:playSound','reveal')">✨ Reveal</button>
+      <button class="btn btn-dim" onclick="emit('game:playSound','winner')">🏆 Winner</button>
+    </div>
+  </section>
+
+  <!-- ═══ SETUP ═══ -->
+  <section class="card" id="card-setup">
+    <h2>Setup</h2>
+
+    <!-- Teams -->
+    <div class="sub-label">TEAM NAMES</div>
+    <div class="input-row">
+      <input id="inp-t1" type="text" placeholder="Team 1 name" maxlength="20">
+      <input id="inp-t2" type="text" placeholder="Team 2 name" maxlength="20">
+      <button class="btn btn-dim" onclick="setTeams()">Save</button>
+    </div>
+
+    <!-- Upload -->
+    <div class="sub-label" style="margin-top:16px">LOAD GAME FILE</div>
+    <div class="input-row">
+      <label class="btn btn-dim file-label" for="file-upload">📂 Choose File</label>
+      <input type="file" id="file-upload" accept=".json" onchange="uploadFile(this)">
+      <span id="file-name" class="muted">No file</span>
+    </div>
+
+    <!-- Manual entry -->
+    <div class="sub-label" style="margin-top:16px">OR ENTER MANUALLY</div>
+    <input id="inp-title" type="text" placeholder="Game title" style="width:100%;margin-bottom:8px">
+
+    <div id="manual-rounds"></div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-dim" onclick="addRound()">+ Add Round</button>
+      <button class="btn btn-blue" onclick="loadManual()">▶ Load Game</button>
+    </div>
+  </section>
+
+  <!-- ═══ SAMPLE FILE FORMAT ═══ -->
+  <section class="card" id="card-format">
+    <h2>Game File Format (JSON)</h2>
+    <pre id="sample-json">{
+  "title": "Game Night",
+  "rounds": [
+    {
+      "question": "Name something you find in a kitchen",
+      "answers": [
+        { "text": "Refrigerator", "points": 45 },
+        { "text": "Stove",        "points": 22 },
+        { "text": "Sink",         "points": 18 },
+        { "text": "Microwave",    "points":  8 },
+        { "text": "Toaster",      "points":  4 }
+      ]
+    }
+  ]
+}</pre>
+  </section>
+
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
