@@ -112,7 +112,7 @@
   white-space: nowrap;
 }
 
-.round-question { flex: 1; }
+.round-question { flex: 1; width: auto; min-width: 0; }
 
 .answers-editor {
   display: flex; flex-direction: column; gap: 6px;
@@ -128,7 +128,7 @@
   width: 18px; text-align: right; flex-shrink: 0;
 }
 
-.ans-text  { flex: 1; }
+.ans-text  { flex: 1; width: auto; min-width: 0; }
 .ans-pts   { width: 64px; flex-shrink: 0; }
 
 .add-answer-btn { margin-top: 2px; }
