@@ -140,6 +140,7 @@ html, body {
 
 #answers-grid {
   display: grid;
+  grid-auto-flow: column;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   width: 100%;

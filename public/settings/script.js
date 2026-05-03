@@ -135,7 +135,10 @@ function addRound(question = '', answers = []) {
       <button class="btn btn-danger btn-xs" onclick="document.getElementById('re-${idx}').remove()">✕</button>
     </div>
     <div class="answers-editor" id="ae-${idx}"></div>
-    <button class="btn btn-dim btn-xs add-answer-btn" onclick="addAnswer(${idx})">+ Answer</button>`;
+    <div class="round-footer">
+      <button class="btn btn-dim btn-xs add-answer-btn" onclick="addAnswer(${idx})">+ Answer</button>
+      <button class="btn btn-blue btn-xs" onclick="saveSet()">💾 Save Round</button>
+    </div>`;
 
   document.getElementById('rounds-container').appendChild(div);
 

@@ -51,7 +51,11 @@ function renderState(state) {
 function buildGrid(answers) {
   const grid = document.getElementById('answers-grid');
   grid.innerHTML = '';
-  grid.className = answers.length <= 4 ? 'single-col' : '';
+  const single = answers.length <= 4;
+  grid.className = single ? 'single-col' : '';
+  const cols = single ? 1 : 2;
+  const rows = Math.ceil(answers.length / cols);
+  grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
   answers.forEach((answer, i) => {
     grid.appendChild(makeTile(i, answer));
