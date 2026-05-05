@@ -37,7 +37,7 @@ function renderState(state) {
 
   // Question — hidden until buzz-in is called
   const round = state.rounds[state.currentRoundIndex];
-  const showQuestion = state.phase !== 'idle';
+  const showQuestion = state.phase !== 'idle' && state.phase !== 'buzzin';
   setText('question-text', showQuestion && round ? round.question.toUpperCase() : 'SURVEY SAYS…');
 
   // Round points
