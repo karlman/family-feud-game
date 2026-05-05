@@ -105,36 +105,27 @@ function updateViewContent(s, view) {
   }
 }
 
-// ── Round list (idle view) ────────────────────────────────────────────────────
+// ── Round dropdown (idle view) ────────────────────────────────────────────────
 function renderRoundList(s) {
-  const list = document.getElementById('round-list');
-  if (!list) return;
+  const sel = document.getElementById('round-select');
+  if (!sel) return;
 
-  // default selection: first unused round, or stay on current if still unused
+  // default to first unused round if current selection is used
   const unused = s.rounds.map((_, i) => i).filter(i => !s.usedRoundIndices.includes(i));
   if (unused.length > 0 && s.usedRoundIndices.includes(selectedRoundIndex)) {
     selectedRoundIndex = unused[0];
   }
 
-  list.innerHTML = s.rounds.map((r, i) => {
+  sel.innerHTML = s.rounds.map((r, i) => {
     const used = s.usedRoundIndices.includes(i);
-    const selected = i === selectedRoundIndex;
-    return `
-      <div class="round-item ${used ? 'used' : ''} ${selected ? 'selected' : ''}"
-           onclick="selectRound(${i})">
-        <div class="round-item-num">${i + 1}</div>
-        <div class="round-item-q">${escHtml(r.question)}</div>
-        ${used ? '<div class="round-used-badge">USED</div>' : ''}
-      </div>`;
+    const label = `${i + 1}. ${r.question.substring(0, 60)}${r.question.length > 60 ? '…' : ''}${used ? ' ✓' : ''}`;
+    return `<option value="${i}" ${i === selectedRoundIndex ? 'selected' : ''}>${escHtml(label)}</option>`;
   }).join('');
 }
 
-function selectRound(index) {
-  selectedRoundIndex = index;
-  if (state) renderRoundList(state);
-}
-
 function beginRound() {
+  const sel = document.getElementById('round-select');
+  selectedRoundIndex = parseInt(sel.value);
   emit('game:beginRound', selectedRoundIndex);
 }
 

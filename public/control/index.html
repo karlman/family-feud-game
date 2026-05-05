@@ -58,9 +58,9 @@
   <!-- ═══ IDLE ═══ -->
   <div id="view-idle" class="view hidden">
     <div class="round-badge" id="idle-round-badge">SELECT A ROUND</div>
-    <div id="round-list"></div>
+    <select id="round-select" class="full-select"></select>
     <button class="btn btn-blue full-btn" id="btn-begin-round" onclick="beginRound()">▶ BEGIN ROUND</button>
-    <button class="btn btn-dim small-btn" onclick="showPregame()">⬅ Change Game</button>
+    <button class="btn btn-dim small-btn" onclick="emit('game:acknowledgeGameOver')">⬅ Change Game</button>
   </div>
 
   <!-- ═══ BUZZIN ═══ -->
