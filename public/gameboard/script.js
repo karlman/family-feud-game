@@ -9,6 +9,7 @@ scaleBoard();
 
 let renderedRoundIndex = -1;
 let renderedAnswerCount = 0;
+let renderedStrikes = 0;
 
 socket.on('connect',       () => console.log('Board connected'));
 socket.on('disconnect',    () => console.log('Board disconnected'));
@@ -31,6 +32,8 @@ function renderState(state) {
   for (let i = 1; i <= 3; i++) {
     setClass('s' + i, 'active', state.strikes >= i);
   }
+  if (state.strikes > renderedStrikes) flashStrikes(state.strikes);
+  renderedStrikes = state.strikes;
 
   // Question — hidden until buzz-in is called
   const round = state.rounds[state.currentRoundIndex];
@@ -49,6 +52,7 @@ function renderState(state) {
     buildGrid(answers);
     renderedRoundIndex  = state.currentRoundIndex;
     renderedAnswerCount = answers.length;
+    renderedStrikes     = 0;
   } else {
     updateTiles(answers);
   }
@@ -102,6 +106,19 @@ function updateTiles(answers) {
     if (answer.revealed && !isRevealed) tile.classList.add('revealed');
     if (!answer.revealed && isRevealed) tile.classList.remove('revealed');
   });
+}
+
+// ── Strike flash overlay ──────────────────────────────────────────────────────
+let strikeFlashTimer = null;
+
+function flashStrikes(count) {
+  const overlay = document.getElementById('strike-overlay');
+  overlay.innerHTML = Array(count).fill('<span class="x-mark">X</span>').join('');
+  overlay.classList.remove('flash');
+  void overlay.offsetWidth; // force reflow to restart animation
+  overlay.classList.add('flash');
+  clearTimeout(strikeFlashTimer);
+  strikeFlashTimer = setTimeout(() => overlay.classList.remove('flash'), 1700);
 }
 
 // ── Utilities ────────────────────────────────────────────────────────────────

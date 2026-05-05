@@ -276,6 +276,38 @@ html, body {
   text-align: left;
 }
 
+/* ── Strike overlay ─────────────────────────────────────────────────────── */
+#strike-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 60px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 100;
+}
+
+#strike-overlay.flash {
+  animation: strike-flash 1.6s ease-out forwards;
+}
+
+#strike-overlay .x-mark {
+  font-family: var(--font-disp);
+  font-size: 480px;
+  line-height: 1;
+  color: var(--red);
+  text-shadow:
+    0 0 60px rgba(255,0,0,0.9),
+    0 0 120px rgba(200,0,0,0.6),
+    4px 4px 0 rgba(0,0,0,0.5);
+}
+
+@keyframes strike-flash {
+  0%   { opacity: 0; transform: scale(1.4); }
+  12%  { opacity: 1; transform: scale(1);   }
+  65%  { opacity: 1; transform: scale(1);   }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+
 /* ── Phase-specific tweaks ───────────────────────────────────────────────── */
 .phase-gameover #game-title {
   animation: title-pulse 1.2s ease-in-out infinite alternate;
