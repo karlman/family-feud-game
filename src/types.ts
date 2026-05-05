@@ -19,7 +19,7 @@ export interface Team {
   score: number;
 }
 
-export type GamePhase = 'idle' | 'buzzin' | 'playing' | 'roundover' | 'gameover';
+export type GamePhase = 'pregame' | 'idle' | 'buzzin' | 'playing' | 'roundover' | 'gameover';
 export type ActivePlayer = 0 | 1 | 2;
 
 export interface GameState {
@@ -33,6 +33,7 @@ export interface GameState {
   phase: GamePhase;
   roundPoints: number;
   loaded: boolean;
+  usedRoundIndices: number[];
 }
 
 export interface ClientToServerEvents {
@@ -46,8 +47,10 @@ export interface ClientToServerEvents {
   'game:awardPoints':     (team: 1 | 2) => void;
   'game:nextRound':       () => void;
   'game:resetRound':      () => void;
-  'game:resetGame':       () => void;
-  'game:playSound':       (sound: string) => void;
+  'game:resetGame':            () => void;
+  'game:playSound':            (sound: string) => void;
+  'game:beginRound':           (index: number) => void;
+  'game:acknowledgeGameOver':  () => void;
 }
 
 export interface ServerToClientEvents {

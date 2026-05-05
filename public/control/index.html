@@ -41,30 +41,27 @@
 
 <main id="main">
 
-  <!-- ═══ PICKER ═══ -->
-  <div id="view-picker" class="view">
+  <!-- ═══ PREGAME ═══ -->
+  <div id="view-pregame" class="view">
     <h2 class="view-title">SELECT GAME</h2>
     <select id="set-select" class="full-select">
       <option value="">— No sets saved. Go to Settings. —</option>
-    </select>
-    <select id="round-select" class="full-select" disabled>
-      <option value="0">— select a set first —</option>
     </select>
     <div class="team-row">
       <input id="inp-t1" type="text" placeholder="Team 1 name" maxlength="20">
       <input id="inp-t2" type="text" placeholder="Team 2 name" maxlength="20">
       <button class="btn btn-dim" onclick="setTeams()">Save</button>
     </div>
-    <button class="btn btn-blue full-btn" id="btn-load-set" onclick="loadSelectedSet()">▶ LOAD ROUND</button>
+    <button class="btn btn-blue full-btn" id="btn-start-game" onclick="startGame()">▶ START GAME</button>
     <a href="/settings" class="btn btn-dim full-btn" style="text-align:center;text-decoration:none;margin-top:8px">⚙ Manage Questions</a>
   </div>
 
   <!-- ═══ IDLE ═══ -->
   <div id="view-idle" class="view hidden">
-    <div class="round-badge" id="idle-round-badge">ROUND 1</div>
-    <div class="question-box" id="idle-question"></div>
-    <button class="btn btn-blue full-btn" onclick="emit('game:startBuzzin')">▶ START BUZZ IN</button>
-    <button class="btn btn-dim small-btn" onclick="showPicker()">⬅ Change Game</button>
+    <div class="round-badge" id="idle-round-badge">SELECT A ROUND</div>
+    <div id="round-list"></div>
+    <button class="btn btn-blue full-btn" id="btn-begin-round" onclick="beginRound()">▶ BEGIN ROUND</button>
+    <button class="btn btn-dim small-btn" onclick="showPregame()">⬅ Change Game</button>
   </div>
 
   <!-- ═══ BUZZIN ═══ -->
@@ -115,8 +112,8 @@
     <div class="round-badge">GAME OVER</div>
     <div class="final-scores" id="final-scores"></div>
     <div class="winner-label" id="winner-label"></div>
-    <button class="btn btn-dim full-btn" onclick="confirmReset()">↺ RESET GAME</button>
-    <button class="btn btn-dim small-btn" onclick="showPicker()">⬅ Load New Game</button>
+    <button class="btn btn-blue full-btn" onclick="emit('game:acknowledgeGameOver')">▶ NEW GAME</button>
+    <button class="btn btn-dim small-btn" onclick="confirmReset()">↺ Reset Scores</button>
   </div>
 
 </main>

@@ -8,9 +8,10 @@ const defaultState = (): GameState => ({
   team2: { name: 'Team 2', score: 0 },
   strikes: 0,
   activePlayer: 0,
-  phase: 'idle',
+  phase: 'pregame',
   roundPoints: 0,
   loaded: false,
+  usedRoundIndices: [],
 });
 
 export class GameManager {
@@ -25,7 +26,7 @@ export class GameManager {
     return this.deepCopy();
   }
 
-  loadGame(data: GameFile, startRoundIndex = 0): void {
+  loadGame(data: GameFile): void {
     const teams = { team1: this.state.team1.name, team2: this.state.team2.name };
     this.state = defaultState();
     this.state.gameTitle = data.title || 'Family Feud';
@@ -36,9 +37,7 @@ export class GameManager {
       answers: r.answers.map(a => ({ text: a.text, points: a.points, revealed: false })),
     }));
     this.state.loaded = this.state.rounds.length > 0;
-    if (this.state.loaded) {
-      this.state.currentRoundIndex = Math.max(0, Math.min(startRoundIndex, this.state.rounds.length - 1));
-    }
+    this.state.phase = this.state.loaded ? 'idle' : 'pregame';
     this.emit();
   }
 
@@ -48,6 +47,26 @@ export class GameManager {
     this.emit();
   }
 
+  beginRound(index: number): void {
+    if (index < 0 || index >= this.state.rounds.length) return;
+    this.state.currentRoundIndex = index;
+    if (!this.state.usedRoundIndices.includes(index)) {
+      this.state.usedRoundIndices.push(index);
+    }
+    this.state.rounds[index].answers.forEach(a => { a.revealed = false; });
+    this.state.strikes = 0;
+    this.state.roundPoints = 0;
+    this.state.activePlayer = 0;
+    this.state.phase = 'buzzin';
+    this.emit();
+  }
+
+  acknowledgeGameOver(): void {
+    this.state.phase = 'pregame';
+    this.emit();
+  }
+
+  // kept for Arduino ringer path
   startBuzzin(): void {
     this.state.phase = 'buzzin';
     this.state.activePlayer = 0;
@@ -77,41 +96,30 @@ export class GameManager {
 
   addStrike(): void {
     this.state.strikes = Math.min(this.state.strikes + 1, 3);
-    if (this.state.strikes >= 3) {
-      this.state.phase = 'roundover';
-    }
+    if (this.state.strikes >= 3) this.state.phase = 'roundover';
     this.emit();
   }
 
   awardPoints(team: 1 | 2): void {
-    if (team === 1) {
-      this.state.team1.score += this.state.roundPoints;
-    } else {
-      this.state.team2.score += this.state.roundPoints;
-    }
+    if (team === 1) this.state.team1.score += this.state.roundPoints;
+    else           this.state.team2.score += this.state.roundPoints;
     this.state.roundPoints = 0;
     this.state.phase = 'roundover';
     this.emit();
   }
 
   nextRound(): void {
-    if (this.state.currentRoundIndex < this.state.rounds.length - 1) {
-      this.state.currentRoundIndex++;
-      this.state.strikes = 0;
-      this.state.activePlayer = 0;
-      this.state.roundPoints = 0;
-      this.state.phase = 'idle';
-    } else {
-      this.state.phase = 'gameover';
-    }
+    this.state.strikes = 0;
+    this.state.activePlayer = 0;
+    this.state.roundPoints = 0;
+    const allUsed = this.state.usedRoundIndices.length >= this.state.rounds.length;
+    this.state.phase = allUsed ? 'gameover' : 'idle';
     this.emit();
   }
 
   resetRound(): void {
     const round = this.currentRound();
-    if (round) {
-      round.answers.forEach(a => { a.revealed = false; });
-    }
+    if (round) round.answers.forEach(a => { a.revealed = false; });
     this.state.strikes = 0;
     this.state.activePlayer = 0;
     this.state.roundPoints = 0;
@@ -149,6 +157,7 @@ export class GameManager {
         ...r,
         answers: r.answers.map(a => ({ ...a })),
       })),
+      usedRoundIndices: [...this.state.usedRoundIndices],
     };
   }
 

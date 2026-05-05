@@ -35,6 +35,7 @@ const game = new GameManager((state: GameState) => {
 
 function syncArduino(state: GameState): void {
   switch (state.phase) {
+    case 'pregame':
     case 'idle':
       serial.send('RESET');
       break;
@@ -64,7 +65,7 @@ io.on('connection', socket => {
   socket.emit('state:update', game.getState());
 
   socket.on('game:load',            data => game.loadGame(data));
-  socket.on('game:loadSet',         ({ setId, startRoundIndex }) => {
+  socket.on('game:loadSet',         ({ setId }) => {
     const set = db.getSet(setId);
     if (!set) return;
     db.recordPlay(setId);
@@ -75,18 +76,20 @@ io.on('connection', socket => {
         answers: r.answers.map(a => ({ text: a.text, points: a.points, revealed: false })),
       })),
     };
-    game.loadGame(gameFile, startRoundIndex);
+    game.loadGame(gameFile);
   });
-  socket.on('game:setTeams',        ({ team1, team2 }) => game.setTeams(team1, team2));
-  socket.on('game:startBuzzin',     () => { game.startBuzzin(); playSound('theme'); });
-  socket.on('game:setActivePlayer', player => game.setActivePlayer(player));
-  socket.on('game:revealAnswer',    index => { game.revealAnswer(index); playSound('reveal'); });
-  socket.on('game:addStrike',       () => { game.addStrike(); playSound('wrong'); });
-  socket.on('game:awardPoints',     team => { game.awardPoints(team); playSound('winner'); });
-  socket.on('game:nextRound',       () => game.nextRound());
-  socket.on('game:resetRound',      () => game.resetRound());
-  socket.on('game:resetGame',       () => game.resetGame());
-  socket.on('game:playSound',       sound => playSound(sound));
+  socket.on('game:setTeams',              ({ team1, team2 }) => game.setTeams(team1, team2));
+  socket.on('game:startBuzzin',           () => { game.startBuzzin(); playSound('theme'); });
+  socket.on('game:beginRound',            index => { game.beginRound(index); playSound('theme'); });
+  socket.on('game:acknowledgeGameOver',   () => game.acknowledgeGameOver());
+  socket.on('game:setActivePlayer',       player => game.setActivePlayer(player));
+  socket.on('game:revealAnswer',          index => { game.revealAnswer(index); playSound('reveal'); });
+  socket.on('game:addStrike',             () => { game.addStrike(); playSound('wrong'); });
+  socket.on('game:awardPoints',           team => { game.awardPoints(team); playSound('winner'); });
+  socket.on('game:nextRound',             () => game.nextRound());
+  socket.on('game:resetRound',            () => game.resetRound());
+  socket.on('game:resetGame',             () => game.resetGame());
+  socket.on('game:playSound',             sound => playSound(sound));
 
   socket.on('disconnect', () => console.log(`Client disconnected: ${socket.id}`));
 });

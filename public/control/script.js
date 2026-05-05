@@ -1,14 +1,13 @@
 // ── Socket ────────────────────────────────────────────────────────────────────
 const socket = io();
 let state = null;
-let showingPicker = false;  // true until first state arrives or user forces picker
+let selectedRoundIndex = 0;
 
 socket.on('connect',    () => setDot(true));
 socket.on('disconnect', () => setDot(false));
 
 socket.on('state:update', s => {
   state = s;
-  if (!s.loaded) showingPicker = true;
   applyState(s);
 });
 
@@ -21,8 +20,7 @@ function emit(event, data) { socket.emit(event, data); }
 // ── View routing ──────────────────────────────────────────────────────────────
 function applyState(s) {
   updateStatusStrip(s);
-
-  const view = (!s.loaded || showingPicker) ? 'picker' : s.phase;
+  const view = s.phase === 'pregame' ? 'pregame' : s.phase;
   showView(view);
   updateViewContent(s, view);
 }
@@ -33,9 +31,8 @@ function showView(name) {
   if (el) el.classList.remove('hidden');
 }
 
-function showPicker() {
-  showingPicker = true;
-  if (state) applyState(state);
+function showPregame() {
+  if (state) { showView('pregame'); updateViewContent(state, 'pregame'); }
 }
 
 // ── Status strip ──────────────────────────────────────────────────────────────
@@ -55,7 +52,7 @@ function updateStatusStrip(s) {
 function updateViewContent(s, view) {
   const round = s.rounds[s.currentRoundIndex];
 
-  if (view === 'picker') {
+  if (view === 'pregame') {
     const t1 = document.getElementById('inp-t1');
     const t2 = document.getElementById('inp-t2');
     if (t1 && !t1.value) t1.value = s.team1.name !== 'Team 1' ? s.team1.name : '';
@@ -63,8 +60,11 @@ function updateViewContent(s, view) {
   }
 
   if (view === 'idle') {
-    setText('idle-round-badge', `ROUND ${s.currentRoundIndex + 1} OF ${s.rounds.length}`);
-    setText('idle-question', round ? round.question : '');
+    const usedCount = s.usedRoundIndices.length;
+    const totalCount = s.rounds.length;
+    setText('idle-round-badge',
+      usedCount === 0 ? 'SELECT A ROUND' : `${usedCount} OF ${totalCount} ROUNDS PLAYED`);
+    renderRoundList(s);
   }
 
   if (view === 'buzzin') {
@@ -91,8 +91,8 @@ function updateViewContent(s, view) {
     const awardSection = document.getElementById('award-section');
     if (awardSection) awardSection.style.display = hasPoints ? '' : 'none';
 
-    const isLastRound = s.currentRoundIndex >= s.rounds.length - 1;
-    setText('btn-next-round', isLastRound ? 'END GAME ⏹' : 'NEXT ROUND ⏭');
+    const allUsed = s.usedRoundIndices.length >= s.rounds.length;
+    setText('btn-next-round', allUsed ? 'END GAME ⏹' : 'NEXT ROUND ⏭');
 
     document.getElementById('roundover-scores').innerHTML = scoreHTML(s);
   }
@@ -103,6 +103,39 @@ function updateViewContent(s, view) {
     const winner = t1 > t2 ? s.team1.name : t2 > t1 ? s.team2.name : null;
     setText('winner-label', winner ? `🏆 ${winner} wins!` : "🏆 It's a tie!");
   }
+}
+
+// ── Round list (idle view) ────────────────────────────────────────────────────
+function renderRoundList(s) {
+  const list = document.getElementById('round-list');
+  if (!list) return;
+
+  // default selection: first unused round, or stay on current if still unused
+  const unused = s.rounds.map((_, i) => i).filter(i => !s.usedRoundIndices.includes(i));
+  if (unused.length > 0 && s.usedRoundIndices.includes(selectedRoundIndex)) {
+    selectedRoundIndex = unused[0];
+  }
+
+  list.innerHTML = s.rounds.map((r, i) => {
+    const used = s.usedRoundIndices.includes(i);
+    const selected = i === selectedRoundIndex;
+    return `
+      <div class="round-item ${used ? 'used' : ''} ${selected ? 'selected' : ''}"
+           onclick="selectRound(${i})">
+        <div class="round-item-num">${i + 1}</div>
+        <div class="round-item-q">${escHtml(r.question)}</div>
+        ${used ? '<div class="round-used-badge">USED</div>' : ''}
+      </div>`;
+  }).join('');
+}
+
+function selectRound(index) {
+  selectedRoundIndex = index;
+  if (state) renderRoundList(state);
+}
+
+function beginRound() {
+  emit('game:beginRound', selectedRoundIndex);
 }
 
 // ── Answers ───────────────────────────────────────────────────────────────────
@@ -141,7 +174,7 @@ function scoreHTML(s) {
     </div>`;
 }
 
-// ── Picker actions ────────────────────────────────────────────────────────────
+// ── Pregame actions ───────────────────────────────────────────────────────────
 async function loadSets() {
   try {
     const sets = await fetch('/api/sets').then(r => r.json());
@@ -155,34 +188,11 @@ async function loadSets() {
   } catch { /* server may not be ready yet */ }
 }
 
-document.getElementById('set-select').addEventListener('change', async function () {
-  const setId = this.value;
-  const roundSel = document.getElementById('round-select');
-  if (!setId) {
-    roundSel.innerHTML = '<option value="0">— select a set first —</option>';
-    roundSel.disabled = true;
-    return;
-  }
-  try {
-    const data = await fetch(`/api/sets/${setId}`).then(r => r.json());
-    if (!data.rounds.length) {
-      roundSel.innerHTML = '<option value="0">No rounds in this set</option>';
-      roundSel.disabled = true;
-    } else {
-      roundSel.disabled = false;
-      roundSel.innerHTML = data.rounds.map((r, i) =>
-        `<option value="${i}">Round ${i + 1}: ${escHtml(r.question.substring(0, 55))}</option>`
-      ).join('');
-    }
-  } catch { toast('Failed to load set details', true); }
-});
-
-function loadSelectedSet() {
+function startGame() {
   const setId = parseInt(document.getElementById('set-select').value);
-  const startRoundIndex = parseInt(document.getElementById('round-select').value) || 0;
   if (!setId) { toast('Choose a question set first', true); return; }
-  emit('game:loadSet', { setId, startRoundIndex });
-  showingPicker = false;
+  selectedRoundIndex = 0;
+  emit('game:loadSet', { setId });
 }
 
 // ── Team names ────────────────────────────────────────────────────────────────
@@ -194,9 +204,9 @@ function setTeams() {
 }
 
 function confirmReset() {
-  if (confirm('Reset the entire game? Scores will be cleared.')) {
+  if (confirm('Reset scores? The loaded question set will be kept.')) {
     emit('game:resetGame');
-    toast('Game reset');
+    toast('Scores reset');
   }
 }
 
