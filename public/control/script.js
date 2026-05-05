@@ -37,6 +37,7 @@ function showPregame() {
 
 // ── Status strip ──────────────────────────────────────────────────────────────
 function updateStatusStrip(s) {
+  setText('stat-phase', s.phase ? s.phase.toUpperCase() : '—');
   setText('stat-round', s.loaded ? `${s.currentRoundIndex + 1}/${s.rounds.length}` : '—');
   setText('stat-strikes', s.strikes);
   setText('stat-t1-name', s.team1.name);
