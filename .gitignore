@@ -4,3 +4,4 @@ dist/
 .env
 .claude/
 data/
+.vscode/
