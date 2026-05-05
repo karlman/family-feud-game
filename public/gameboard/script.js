@@ -1,5 +1,12 @@
 const socket = io();
 
+function scaleBoard() {
+  const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  document.getElementById('app').style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', scaleBoard);
+scaleBoard();
+
 let renderedRoundIndex = -1;
 let renderedAnswerCount = 0;
 

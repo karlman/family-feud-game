@@ -72,7 +72,7 @@ io.on('connection', socket => {
       title: set.title,
       rounds: set.rounds.map(r => ({
         question: r.question,
-        answers: r.answers.map(a => ({ text: a.text, points: a.points })),
+        answers: r.answers.map(a => ({ text: a.text, points: a.points, revealed: false })),
       })),
     };
     game.loadGame(gameFile, startRoundIndex);
