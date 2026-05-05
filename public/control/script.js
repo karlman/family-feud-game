@@ -191,6 +191,9 @@ async function loadSets() {
 function startGame() {
   const setId = parseInt(document.getElementById('set-select').value);
   if (!setId) { toast('Choose a question set first', true); return; }
+  const t1 = document.getElementById('inp-t1').value.trim() || 'Team 1';
+  const t2 = document.getElementById('inp-t2').value.trim() || 'Team 2';
+  emit('game:setTeams', { team1: t1, team2: t2 });
   selectedRoundIndex = 0;
   emit('game:loadSet', { setId });
 }
