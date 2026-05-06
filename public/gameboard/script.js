@@ -9,7 +9,7 @@ scaleBoard();
 
 let renderedRoundIndex = -1;
 let renderedAnswerCount = 0;
-let renderedStrikes = 0;
+let renderedStrikes = -1;   // -1 = not yet received first state
 let renderedIdleBoard = false;
 
 socket.on('connect',       () => console.log('Board connected'));
@@ -35,7 +35,7 @@ function renderState(state) {
   for (let i = 1; i <= 3; i++) {
     setClass('s' + i, 'active', state.strikes >= i);
   }
-  if (state.strikes > renderedStrikes) flashStrikes(state.strikes);
+  if (renderedStrikes !== -1 && state.strikes > renderedStrikes) flashStrikes(state.strikes);
   renderedStrikes = state.strikes;
 
   // Question — hidden until buzz-in is called

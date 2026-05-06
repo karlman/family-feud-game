@@ -275,11 +275,11 @@ html, body {
 }
 
 .strike-action-row.has-undo .strike-primary {
-  flex: 0 0 75%;
+  flex: 3;
 }
 
 .strike-undo {
-  flex: 0 0 25%;
+  flex: 1;
   font-size: 14px;
   letter-spacing: 1.5px;
 }
