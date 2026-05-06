@@ -36,6 +36,15 @@ const game = new GameManager((state: GameState) => {
   syncArduino(state);
 });
 
+// Load persisted state if it exists (e.g., after power loss)
+const persistedState = GameManager.loadPersistedState();
+if (persistedState) {
+  console.log(`Restoring game state from power loss (phase: ${persistedState.phase})`);
+  game.restoreFromState(persistedState);
+  // Emit the restored state to any connected clients
+  setTimeout(() => io.emit('state:update', game.getState()), 100);
+}
+
 function syncArduino(state: GameState): void {
   switch (state.phase) {
     case 'pregame':

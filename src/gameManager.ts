@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { GameState, GameFile, Round, ActivePlayer } from './types';
 
 const defaultState = (): GameState => ({
@@ -15,6 +17,15 @@ const defaultState = (): GameState => ({
   loaded: false,
   usedRoundIndices: [],
 });
+
+const STATE_FILE = path.join(__dirname, '..', 'data', 'game-state.json');
+
+function ensureDataDir(): void {
+  const dataDir = path.dirname(STATE_FILE);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+}
 
 export class GameManager {
   private state: GameState = defaultState();
@@ -34,6 +45,7 @@ export class GameManager {
   }
 
   loadGame(data: GameFile): void {
+    GameManager.clearPersistedState();
     const teams = { team1: this.state.team1.name, team2: this.state.team2.name };
     this.state = defaultState();
     this.state.gameTitle = data.title || 'Family Feud';
@@ -53,6 +65,28 @@ export class GameManager {
     this.faceoffHadStrike = false;
     this.originalControlTeam = 0;
     this.emit();
+  }
+
+  restoreFromState(savedState: GameState): void {
+    // Restore the persisted state directly without reset
+    this.state = {
+      ...savedState,
+      team1: { ...savedState.team1 },
+      team2: { ...savedState.team2 },
+      rounds: savedState.rounds.map(r => ({
+        ...r,
+        answers: r.answers.map(a => ({ ...a })),
+      })),
+      usedRoundIndices: [...savedState.usedRoundIndices],
+    };
+    // Note: private variables like turnReveals, openingTeam, etc. are not persisted,
+    // but that's OK as they're temporary phase state that will be recomputed
+    this.turnReveals = 0;
+    this.openingTeam = 0;
+    this.controlTargetPoints = 0;
+    this.faceoffHadStrike = false;
+    this.originalControlTeam = 0;
+    // Don't emit here, just restore internal state
   }
 
   setTeams(team1: string, team2: string): void {
@@ -83,6 +117,7 @@ export class GameManager {
   }
 
   acknowledgeGameOver(): void {
+    GameManager.clearPersistedState();
     this.state.phase = 'pregame';
     this.emit();
   }
@@ -439,5 +474,37 @@ export class GameManager {
 
   private emit(): void {
     this.onChange(this.deepCopy());
+    this.persistState();
+  }
+
+  private persistState(): void {
+    try {
+      ensureDataDir();
+      fs.writeFileSync(STATE_FILE, JSON.stringify(this.state, null, 2));
+    } catch (err) {
+      console.error('Failed to persist game state:', err);
+    }
+  }
+
+  static loadPersistedState(): GameState | null {
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        const data = fs.readFileSync(STATE_FILE, 'utf-8');
+        return JSON.parse(data) as GameState;
+      }
+    } catch (err) {
+      console.error('Failed to load persisted game state:', err);
+    }
+    return null;
+  }
+
+  static clearPersistedState(): void {
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        fs.unlinkSync(STATE_FILE);
+      }
+    } catch (err) {
+      console.error('Failed to clear persisted game state:', err);
+    }
   }
 }
