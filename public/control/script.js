@@ -2,6 +2,7 @@
 const socket = io();
 let state = null;
 let selectedRoundIndex = 0;
+let pendingRevealIndex = null;
 
 socket.on('connect',    () => setDot(true));
 socket.on('disconnect', () => setDot(false));
@@ -20,7 +21,9 @@ function emit(event, data) { socket.emit(event, data); }
 // ── View routing ──────────────────────────────────────────────────────────────
 function applyState(s) {
   updateStatusStrip(s);
-  const view = s.phase === 'pregame' ? 'pregame' : s.phase;
+  const view = s.phase === 'pregame' ? 'pregame' : s.phase === 'faceoff' ? 'playing' : s.phase;
+  if (view !== 'playing') hideRevealModal();
+  if (view !== 'playing' && view !== 'roundover') hideResetRoundModal();
   showView(view);
   updateViewContent(s, view);
 }
@@ -76,10 +79,31 @@ function updateViewContent(s, view) {
 
   if (view === 'playing') {
     setText('play-round-badge', `R${s.currentRoundIndex + 1}`);
-    setText('play-active-label', s.activePlayer > 0
-      ? (s.activePlayer === 1 ? s.team1.name : s.team2.name) + ' answering'
-      : 'Answering');
+    if (s.phase === 'faceoff') {
+      setText('play-active-label', s.activePlayer > 0
+        ? `Faceoff: ${(s.activePlayer === 1 ? s.team1.name : s.team2.name)} answering`
+        : 'Faceoff');
+    } else if (s.stealChanceActive) {
+      setText('play-active-label', s.activePlayer > 0
+        ? `Steal chance: ${(s.activePlayer === 1 ? s.team1.name : s.team2.name)}`
+        : 'Steal chance');
+    } else {
+      setText('play-active-label', s.activePlayer > 0
+        ? (s.activePlayer === 1 ? s.team1.name : s.team2.name) + ' answering'
+        : 'Answering');
+    }
     setText('play-question', round ? round.question : '');
+    const contestEl = document.getElementById('play-control-status');
+    if (contestEl) {
+      if (s.phase === 'faceoff') {
+        contestEl.textContent = s.controlContestActive ? 'Beat the first answer' : 'Faceoff active';
+      } else if (s.stealChanceActive) {
+        contestEl.textContent = 'One guess for the steal';
+      } else {
+        contestEl.textContent = 'Control challenge active';
+      }
+      contestEl.classList.toggle('hidden', s.phase !== 'faceoff' && !s.controlContestActive && !s.stealChanceActive);
+    }
     renderStrikes(s.strikes);
     renderAnswerList(round ? round.answers : []);
   }
@@ -94,6 +118,15 @@ function updateViewContent(s, view) {
 
     const allUsed = s.usedRoundIndices.length >= s.rounds.length;
     setText('btn-next-round', allUsed ? 'END GAME ⏹' : 'NEXT ROUND ⏭');
+
+    const nextUnrevealedIndex = round ? round.answers.findIndex(answer => !answer.revealed) : -1;
+    const revealBtn = document.getElementById('btn-reveal-next-answer');
+    if (revealBtn) {
+      revealBtn.classList.toggle('hidden', nextUnrevealedIndex === -1);
+      if (nextUnrevealedIndex !== -1) {
+        revealBtn.textContent = `REVEAL ANSWER ${nextUnrevealedIndex + 1}`;
+      }
+    }
 
     document.getElementById('roundover-scores').innerHTML = scoreHTML(s);
   }
@@ -142,9 +175,76 @@ function renderAnswerList(answers) {
       <div class="answer-pts">${a.points}</div>
       ${a.revealed
         ? '<span class="revealed-check">✓</span>'
-        : `<button class="btn btn-blue reveal-btn" onclick="emit('game:revealAnswer', ${i})">REVEAL</button>`
+        : `<button class="btn btn-blue reveal-btn" onclick="showRevealModal(${i})">REVEAL</button>`
       }
     </div>`).join('');
+}
+
+function showRevealModal(answerIndex) {
+  if (!state) return;
+  const round = state.rounds[state.currentRoundIndex];
+  if (!round || !round.answers || !round.answers[answerIndex]) return;
+
+  const answer = round.answers[answerIndex];
+  if (answer.revealed) return;
+
+  pendingRevealIndex = answerIndex;
+  setText('reveal-modal-answer', answer.text);
+  const modal = document.getElementById('reveal-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function confirmRevealAnswer() {
+  if (pendingRevealIndex === null) return;
+  emit('game:revealAnswer', pendingRevealIndex);
+  hideRevealModal();
+}
+
+function cancelRevealAnswer() {
+  hideRevealModal();
+}
+
+function hideRevealModal() {
+  pendingRevealIndex = null;
+  const modal = document.getElementById('reveal-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function showResetRoundModal() {
+  const modal = document.getElementById('reset-round-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function confirmResetRound() {
+  emit('game:resetRound');
+  hideResetRoundModal();
+}
+
+function cancelResetRound() {
+  hideResetRoundModal();
+}
+
+function hideResetRoundModal() {
+  const modal = document.getElementById('reset-round-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+const revealModalEl = document.getElementById('reveal-modal');
+if (revealModalEl) {
+  revealModalEl.addEventListener('click', (e) => {
+    if (e.target === revealModalEl) {
+      cancelRevealAnswer();
+    }
+  });
+}
+
+const resetRoundModalEl = document.getElementById('reset-round-modal');
+if (resetRoundModalEl) {
+  resetRoundModalEl.addEventListener('click', (e) => {
+    if (e.target === resetRoundModalEl) {
+      cancelResetRound();
+    }
+  });
 }
 
 function renderStrikes(count) {
@@ -221,6 +321,19 @@ function setDot(online) {
   dot.title = online ? 'Connected' : 'Disconnected';
 }
 
+async function loadVersionBadge(pageName) {
+  const el = document.getElementById('app-version');
+  if (!el) return;
+  try {
+    const data = await fetch('/api/version').then(r => r.json());
+    const started = new Date(data.startedAt);
+    const startedText = Number.isNaN(started.getTime()) ? 'unknown start' : started.toLocaleTimeString();
+    el.textContent = `${pageName} • v${data.version} • ${startedText}`;
+  } catch {
+    el.textContent = `${pageName} • version unavailable`;
+  }
+}
+
 let toastTimer;
 function toast(msg, isError = false) {
   const el = document.getElementById('toast');
@@ -232,4 +345,5 @@ function toast(msg, isError = false) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+loadVersionBadge('control');
 loadSets();

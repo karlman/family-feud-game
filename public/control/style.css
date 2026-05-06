@@ -234,6 +234,19 @@ html, body {
   text-transform: uppercase; letter-spacing: 1px;
 }
 
+.control-status {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: #7c2d12;
+  border: 1px solid #ea580c;
+  border-radius: 4px;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+
 .strike-display {
   font-size: 20px; color: #ff4444; letter-spacing: 2px;
   min-width: 60px; text-align: right;
@@ -369,6 +382,75 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus {
 .sound-btn:active { transform: scale(0.88); }
 
 .muted { color: var(--muted); font-size: 13px; }
+
+.app-version {
+  position: fixed;
+  right: 10px;
+  bottom: 56px;
+  z-index: 60;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  background: rgba(13, 17, 23, 0.88);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+/* ── Reveal modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-card h3 {
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+.modal-copy {
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.modal-answer {
+  background: var(--dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.modal-actions {
+  margin-top: 4px;
+}
 
 /* ── Round list (idle view) ── */
 #round-list { display: flex; flex-direction: column; gap: 6px; }

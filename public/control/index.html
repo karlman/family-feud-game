@@ -86,12 +86,14 @@
     <div class="playing-header">
       <span class="round-badge-sm" id="play-round-badge">R1</span>
       <span class="active-label" id="play-active-label">Answering</span>
+      <span class="control-status hidden" id="play-control-status">Control challenge active</span>
       <span class="strike-display" id="play-strikes"></span>
     </div>
     <div class="question-sm" id="play-question"></div>
     <div id="answer-list"></div>
     <button class="btn btn-strike full-btn strike-big" onclick="emit('game:addStrike')">✗ STRIKE</button>
-    <button class="btn btn-dim small-btn" onclick="emit('game:resetRound')">↺ Reset Round</button>
+    <button class="btn btn-p2 full-btn" onclick="emit('game:swapActiveTeam')">⇄ SWAP TEAM CONTROL</button>
+    <button class="btn btn-dim small-btn" onclick="showResetRoundModal()">↺ Reset Round</button>
   </div>
 
   <!-- ═══ ROUND OVER ═══ -->
@@ -106,8 +108,9 @@
       </div>
     </div>
     <div class="inline-scores" id="roundover-scores"></div>
+    <button class="btn btn-blue full-btn hidden" onclick="emit('game:revealRoundOverAnswer')" id="btn-reveal-next-answer">REVEAL ANSWER</button>
     <button class="btn btn-blue full-btn" onclick="emit('game:nextRound')" id="btn-next-round">NEXT ROUND ⏭</button>
-    <button class="btn btn-dim small-btn" onclick="emit('game:resetRound')">↺ Reset Round</button>
+    <button class="btn btn-dim small-btn" onclick="showResetRoundModal()">↺ Reset Round</button>
   </div>
 
   <!-- ═══ GAME OVER ═══ -->
@@ -121,6 +124,29 @@
 
 </main>
 
+<div id="reveal-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reveal-modal-title">
+  <div class="modal-card">
+    <h3 id="reveal-modal-title">Confirm Reveal</h3>
+    <p class="modal-copy">Reveal this answer?</p>
+    <div id="reveal-modal-answer" class="modal-answer"></div>
+    <div class="btn-row modal-actions">
+      <button class="btn btn-blue flex-1" onclick="confirmRevealAnswer()">REVEAL</button>
+      <button class="btn btn-dim flex-1" onclick="cancelRevealAnswer()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<div id="reset-round-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reset-round-modal-title">
+  <div class="modal-card">
+    <h3 id="reset-round-modal-title">Reset Round</h3>
+    <p class="modal-copy">This clears revealed answers, strikes, and active control for the current round.</p>
+    <div class="btn-row modal-actions">
+      <button class="btn btn-strike flex-1" onclick="confirmResetRound()">RESET ROUND</button>
+      <button class="btn btn-dim flex-1" onclick="cancelResetRound()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <!-- Sounds tray — always visible -->
 <div id="sounds-tray">
   <button class="sound-btn" title="Theme"  onclick="emit('game:playSound','theme')">🎵</button>
@@ -129,6 +155,8 @@
   <button class="sound-btn" title="Reveal" onclick="emit('game:playSound','reveal')">✨</button>
   <button class="sound-btn" title="Winner" onclick="emit('game:playSound','winner')">🏆</button>
 </div>
+
+<div id="app-version" class="app-version">control • loading version…</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="script.js"></script>

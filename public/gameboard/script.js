@@ -10,10 +10,13 @@ scaleBoard();
 let renderedRoundIndex = -1;
 let renderedAnswerCount = 0;
 let renderedStrikes = 0;
+let renderedIdleBoard = false;
 
 socket.on('connect',       () => console.log('Board connected'));
 socket.on('disconnect',    () => console.log('Board disconnected'));
 socket.on('state:update',  renderState);
+
+loadVersionBadge('gameboard');
 
 // ── Main render ──────────────────────────────────────────────────────────────
 function renderState(state) {
@@ -44,15 +47,20 @@ function renderState(state) {
   setText('points-value', state.roundPoints);
 
   // Answer grid — rebuild if round changed or answer count changed
-  const answers = round ? round.answers : [];
+  const isIdle = state.phase === 'idle';
+  const answers = isIdle
+    ? Array.from({ length: 6 }, () => ({ text: '', points: 0, revealed: false }))
+    : (round ? round.answers : []);
   const changed = state.currentRoundIndex !== renderedRoundIndex
-               || answers.length !== renderedAnswerCount;
+               || answers.length !== renderedAnswerCount
+               || renderedIdleBoard !== isIdle;
 
   if (changed) {
     buildGrid(answers);
     renderedRoundIndex  = state.currentRoundIndex;
     renderedAnswerCount = answers.length;
     renderedStrikes     = 0;
+    renderedIdleBoard   = isIdle;
   } else {
     updateTiles(answers);
   }
@@ -134,4 +142,17 @@ function setClass(id, cls, on) {
 
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadVersionBadge(pageName) {
+  const el = document.getElementById('app-version');
+  if (!el) return;
+  try {
+    const data = await fetch('/api/version').then(r => r.json());
+    const started = new Date(data.startedAt);
+    const startedText = Number.isNaN(started.getTime()) ? 'unknown start' : started.toLocaleTimeString();
+    el.textContent = `${pageName} • v${data.version} • ${startedText}`;
+  } catch {
+    el.textContent = `${pageName} • version unavailable`;
+  }
 }

@@ -19,7 +19,7 @@ export interface Team {
   score: number;
 }
 
-export type GamePhase = 'pregame' | 'idle' | 'buzzin' | 'playing' | 'roundover' | 'gameover';
+export type GamePhase = 'pregame' | 'idle' | 'buzzin' | 'faceoff' | 'playing' | 'roundover' | 'gameover';
 export type ActivePlayer = 0 | 1 | 2;
 
 export interface GameState {
@@ -31,6 +31,8 @@ export interface GameState {
   strikes: number;
   activePlayer: ActivePlayer;
   phase: GamePhase;
+  controlContestActive: boolean;
+  stealChanceActive: boolean;
   roundPoints: number;
   loaded: boolean;
   usedRoundIndices: number[];
@@ -43,7 +45,9 @@ export interface ClientToServerEvents {
   'game:startBuzzin':     () => void;
   'game:setActivePlayer': (player: ActivePlayer) => void;
   'game:revealAnswer':    (index: number) => void;
+  'game:revealRoundOverAnswer': () => void;
   'game:addStrike':       () => void;
+  'game:swapActiveTeam':  () => void;
   'game:awardPoints':     (team: 1 | 2) => void;
   'game:nextRound':       () => void;
   'game:resetRound':      () => void;

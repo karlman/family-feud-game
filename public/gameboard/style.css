@@ -310,6 +310,21 @@ html, body {
     4px 4px 0 rgba(0,0,0,0.6);
 }
 
+.app-version {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  z-index: 120;
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 5px 9px;
+}
+
 @keyframes strike-flash {
   0%   { opacity: 0; transform: scale(1.4); }
   12%  { opacity: 1; transform: scale(1);   }

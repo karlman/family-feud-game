@@ -3,7 +3,21 @@ let roundCounter = 0;
 let answerCounters = {};
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+loadVersionBadge('settings');
 loadSets();
+
+async function loadVersionBadge(pageName) {
+  const el = document.getElementById('app-version');
+  if (!el) return;
+  try {
+    const data = await fetch('/api/version').then(r => r.json());
+    const started = new Date(data.startedAt);
+    const startedText = Number.isNaN(started.getTime()) ? 'unknown start' : started.toLocaleTimeString();
+    el.textContent = `${pageName} • v${data.version} • ${startedText}`;
+  } catch {
+    el.textContent = `${pageName} • version unavailable`;
+  }
+}
 
 async function loadSets() {
   try {

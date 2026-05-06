@@ -10,6 +10,9 @@ import { playSound } from './soundManager';
 import * as db from './db';
 import { GameFile, GameState, ClientToServerEvents, ServerToClientEvents } from './types';
 
+const APP_VERSION = process.env.APP_VERSION || '2026.05.05-v6';
+const APP_STARTED_AT = new Date().toISOString();
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
@@ -42,6 +45,7 @@ function syncArduino(state: GameState): void {
     case 'buzzin':
       serial.send('BUZZIN');
       break;
+    case 'faceoff':
     case 'playing':
       serial.send(`ACTIVE:${state.activePlayer}`);
       if (state.strikes > 0) serial.send(`STRIKE:${state.strikes}`);
@@ -84,7 +88,9 @@ io.on('connection', socket => {
   socket.on('game:acknowledgeGameOver',   () => game.acknowledgeGameOver());
   socket.on('game:setActivePlayer',       player => game.setActivePlayer(player));
   socket.on('game:revealAnswer',          index => { game.revealAnswer(index); playSound('reveal'); });
+  socket.on('game:revealRoundOverAnswer', () => { game.revealRoundOverAnswer(); playSound('reveal'); });
   socket.on('game:addStrike',             () => { game.addStrike(); playSound('wrong'); });
+  socket.on('game:swapActiveTeam',        () => game.swapActiveTeam());
   socket.on('game:awardPoints',           team => { game.awardPoints(team); playSound('winner'); });
   socket.on('game:nextRound',             () => game.nextRound());
   socket.on('game:resetRound',            () => game.resetRound());
@@ -144,6 +150,10 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 app.get('/api/state', (_req, res) => res.json(game.getState()));
+
+app.get('/api/version', (_req, res) => {
+  res.json({ version: APP_VERSION, startedAt: APP_STARTED_AT });
+});
 
 app.get('/', (_req, res) => res.redirect('/gameboard'));
 
