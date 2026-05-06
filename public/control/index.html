@@ -91,7 +91,10 @@
     </div>
     <div class="question-sm" id="play-question"></div>
     <div id="answer-list"></div>
-    <button class="btn btn-strike full-btn strike-big" id="btn-strike-action" onclick="handlePrimaryPlayAction()">✗ STRIKE</button>
+    <div class="strike-action-row" id="strike-action-row">
+      <button class="btn btn-strike strike-big strike-primary" id="btn-strike-action" onclick="handlePrimaryPlayAction()">✗ STRIKE</button>
+      <button class="btn btn-dim strike-undo hidden" id="btn-undo-strike" onclick="emit('game:undoStrike')">UNDO</button>
+    </div>
     <button class="btn btn-p2 full-btn" onclick="emit('game:swapActiveTeam')">⇄ SWAP TEAM CONTROL</button>
     <button class="btn btn-dim small-btn" onclick="showResetRoundModal()">↺ Reset Round</button>
   </div>

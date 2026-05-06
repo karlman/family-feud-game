@@ -48,6 +48,7 @@ export interface ClientToServerEvents {
   'game:revealAnswer':    (index: number) => void;
   'game:revealRoundOverAnswer': () => void;
   'game:addStrike':       () => void;
+  'game:undoStrike':      () => void;
   'game:swapActiveTeam':  () => void;
   'game:awardPoints':     (team: 1 | 2) => void;
   'game:nextRound':       () => void;

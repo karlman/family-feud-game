@@ -307,6 +307,11 @@ export class GameManager {
     this.emit();
   }
 
+  undoStrike(): void {
+    this.state.strikes = Math.max(0, this.state.strikes - 1);
+    this.emit();
+  }
+
   swapActiveTeam(): void {
     if ((this.state.phase !== 'playing' && this.state.phase !== 'faceoff' && this.state.phase !== 'control') || this.state.activePlayer === 0) return;
     this.state.activePlayer = this.state.activePlayer === 1 ? 2 : 1;
@@ -337,6 +342,11 @@ export class GameManager {
   }
 
   nextRound(): void {
+    const round = this.currentRound();
+    if (this.state.phase === 'roundover' && round && round.answers.some(a => !a.revealed)) {
+      return;
+    }
+
     this.state.strikes = 0;
     this.state.activePlayer = 0;
     this.state.roundPoints = 0;

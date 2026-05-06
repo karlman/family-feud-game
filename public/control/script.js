@@ -130,6 +130,13 @@ function updateViewContent(s, view) {
     const allUsed = s.usedRoundIndices.length >= s.rounds.length;
     setText('btn-next-round', allUsed ? 'END GAME ⏹' : 'NEXT ROUND ⏭');
 
+    const allRevealed = round ? round.answers.every(answer => answer.revealed) : true;
+    const nextRoundBtn = document.getElementById('btn-next-round');
+    if (nextRoundBtn) {
+      nextRoundBtn.disabled = !allRevealed;
+      nextRoundBtn.title = allRevealed ? '' : 'Reveal all answers before continuing';
+    }
+
     const nextUnrevealedIndex = round ? round.answers.findIndex(answer => !answer.revealed) : -1;
     const revealBtn = document.getElementById('btn-reveal-next-answer');
     if (revealBtn) {
@@ -193,14 +200,21 @@ function renderAnswerList(answers, lockReveals = false) {
 
 function renderPrimaryPlayAction(s) {
   const btn = document.getElementById('btn-strike-action');
+  const undoBtn = document.getElementById('btn-undo-strike');
+  const row = document.getElementById('strike-action-row');
   if (!btn) return;
 
   if (s.phase === 'control') {
     btn.textContent = '▶ START PLAY';
-    btn.className = 'btn btn-blue full-btn strike-big';
+    btn.className = 'btn btn-blue strike-big strike-primary';
+    if (undoBtn) undoBtn.classList.add('hidden');
+    if (row) row.classList.remove('has-undo');
   } else {
     btn.textContent = '✗ STRIKE';
-    btn.className = 'btn btn-strike full-btn strike-big';
+    btn.className = 'btn btn-strike strike-big strike-primary';
+    const showUndo = s.strikes > 0;
+    if (undoBtn) undoBtn.classList.toggle('hidden', !showUndo);
+    if (row) row.classList.toggle('has-undo', showUndo);
   }
 }
 

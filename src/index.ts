@@ -92,6 +92,7 @@ io.on('connection', socket => {
   socket.on('game:revealAnswer',          index => { game.revealAnswer(index); playSound('reveal'); });
   socket.on('game:revealRoundOverAnswer', () => { game.revealRoundOverAnswer(); playSound('reveal'); });
   socket.on('game:addStrike',             () => { game.addStrike(); playSound('wrong'); });
+  socket.on('game:undoStrike',            () => game.undoStrike());
   socket.on('game:swapActiveTeam',        () => game.swapActiveTeam());
   socket.on('game:awardPoints',           team => { game.awardPoints(team); playSound('winner'); });
   socket.on('game:nextRound',             () => game.nextRound());

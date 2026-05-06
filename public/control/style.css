@@ -35,6 +35,8 @@ html, body {
   min-height: 100vh;
 }
 
+.hidden { display: none !important; }
+
 /* ── Toast ── */
 #toast {
   position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
@@ -182,6 +184,11 @@ html, body {
   touch-action: manipulation;
 }
 .btn:active { transform: scale(0.96); }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .btn-blue   { background: var(--blue);   color: #fff; }
 .btn-blue:hover { background: var(--blue-h); }
@@ -255,6 +262,27 @@ html, body {
 
 /* ── Strike button ── */
 .strike-big { font-size: 24px; letter-spacing: 3px; padding: 20px; }
+
+.strike-action-row {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
+.strike-primary {
+  flex: 1;
+  width: auto;
+}
+
+.strike-action-row.has-undo .strike-primary {
+  flex: 0 0 75%;
+}
+
+.strike-undo {
+  flex: 0 0 25%;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+}
 
 /* ── Answer list ── */
 #answer-list { display: flex; flex-direction: column; gap: 6px; }
