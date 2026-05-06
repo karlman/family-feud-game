@@ -40,7 +40,6 @@ html, body {
   height: 195px;
   padding: 0 60px;
   background: linear-gradient(180deg, rgba(5,10,35,0.97) 0%, rgba(8,14,40,0.85) 100%);
-  border-bottom: 3px solid var(--gold-dim);
   box-shadow: 0 4px 30px rgba(0,0,0,0.6);
   flex-shrink: 0;
 }
@@ -49,6 +48,18 @@ html, body {
   flex: 1;
   display: flex; flex-direction: column; align-items: center;
   gap: 4px;
+}
+
+.team-focus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 320px;
+  padding: 10px 22px;
+  border: 4px solid transparent;
+  border-radius: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .team-name {
@@ -70,6 +81,13 @@ html, body {
 
 .team-panel.active .team-name  { color: #fff; text-shadow: 0 0 25px rgba(255,255,255,0.9); }
 .team-panel.active .team-score { color: var(--gold); text-shadow: 0 0 35px rgba(255,215,0,0.85); }
+.team-panel.active .team-focus {
+  border-color: var(--gold);
+  background: rgba(255, 215, 0, 0.12);
+  box-shadow:
+    0 0 26px rgba(255, 215, 0, 0.55),
+    inset 0 0 18px rgba(255, 215, 0, 0.15);
+}
 
 #center-header {
   flex: 0 0 480px;
@@ -119,8 +137,10 @@ html, body {
 #question-bar {
   display: flex; align-items: center; justify-content: center;
   min-height: 82px; flex-shrink: 0;
+  margin-top: 14px;
   padding: 10px 120px;
   background: linear-gradient(135deg, #160830 0%, #2a1260 50%, #160830 100%);
+  border-top: 3px solid var(--gold-dim);
   border-bottom: 2px solid var(--gold-dim);
 }
 
