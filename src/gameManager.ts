@@ -117,6 +117,16 @@ export class GameManager {
     this.emit();
   }
 
+  startPlay(): void {
+    if (this.state.phase !== 'control' || this.state.activePlayer === 0) return;
+    this.state.strikes = 0;
+    this.turnReveals = 0;
+    this.state.controlContestActive = false;
+    this.state.stealChanceActive = false;
+    this.state.phase = 'playing';
+    this.emit();
+  }
+
   revealAnswer(index: number): void {
     const round = this.currentRound();
     if (!round) return;
@@ -146,7 +156,7 @@ export class GameManager {
         this.controlTargetPoints = 0;
         this.state.strikes = 0;
         this.turnReveals = 0;
-        this.state.phase = 'playing';
+        this.state.phase = 'control';
         this.emit();
         return;
       }
@@ -159,7 +169,7 @@ export class GameManager {
         this.controlTargetPoints = 0;
         this.state.strikes = 0;
         this.turnReveals = 0;
-        this.state.phase = 'playing';
+        this.state.phase = 'control';
         this.emit();
         return;
       }
@@ -186,13 +196,13 @@ export class GameManager {
         this.faceoffHadStrike = false;
         if (beatOpeningAnswer) {
           this.openingTeam = revealingTeam;
-          this.state.phase = 'playing';
+          this.state.phase = 'control';
           this.emit();
           return;
         }
 
         this.state.activePlayer = this.openingTeam;
-        this.state.phase = 'playing';
+        this.state.phase = 'control';
         this.emit();
         return;
       }
@@ -205,7 +215,7 @@ export class GameManager {
         this.controlTargetPoints = 0;
         this.state.strikes = 0;
         this.turnReveals = 0;
-        this.state.phase = 'playing';
+        this.state.phase = 'control';
         this.emit();
         return;
       }
@@ -239,6 +249,22 @@ export class GameManager {
 
     if (this.state.phase === 'faceoff' && this.state.activePlayer !== 0) {
       this.emit();
+
+      // First team had a valid non-#1 answer and second team missed:
+      // first team wins control immediately.
+      if (this.state.controlContestActive && this.openingTeam !== 0) {
+        this.state.activePlayer = this.openingTeam;
+        this.state.strikes = 0;
+        this.turnReveals = 0;
+        this.state.controlContestActive = false;
+        this.state.stealChanceActive = false;
+        this.controlTargetPoints = 0;
+        this.faceoffHadStrike = false;
+        this.state.phase = 'control';
+        this.emit();
+        return;
+      }
+
       this.state.activePlayer = this.state.activePlayer === 1 ? 2 : 1;
       this.state.strikes = 0;
       this.turnReveals = 0;
@@ -282,7 +308,7 @@ export class GameManager {
   }
 
   swapActiveTeam(): void {
-    if ((this.state.phase !== 'playing' && this.state.phase !== 'faceoff') || this.state.activePlayer === 0) return;
+    if ((this.state.phase !== 'playing' && this.state.phase !== 'faceoff' && this.state.phase !== 'control') || this.state.activePlayer === 0) return;
     this.state.activePlayer = this.state.activePlayer === 1 ? 2 : 1;
     this.state.strikes = 0;
     this.turnReveals = 0;
@@ -291,6 +317,9 @@ export class GameManager {
     this.controlTargetPoints = 0;
     this.faceoffHadStrike = false;
     if (this.state.phase === 'faceoff') {
+      this.openingTeam = this.state.activePlayer;
+    }
+    if (this.state.phase === 'control') {
       this.openingTeam = this.state.activePlayer;
     }
     if (this.state.phase === 'playing') {

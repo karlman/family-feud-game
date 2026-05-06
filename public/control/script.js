@@ -21,7 +21,7 @@ function emit(event, data) { socket.emit(event, data); }
 // ── View routing ──────────────────────────────────────────────────────────────
 function applyState(s) {
   updateStatusStrip(s);
-  const view = s.phase === 'pregame' ? 'pregame' : s.phase === 'faceoff' ? 'playing' : s.phase;
+  const view = s.phase === 'pregame' ? 'pregame' : (s.phase === 'faceoff' || s.phase === 'control') ? 'playing' : s.phase;
   if (view !== 'playing') hideRevealModal();
   if (view !== 'playing' && view !== 'roundover') hideResetRoundModal();
   showView(view);
@@ -83,6 +83,10 @@ function updateViewContent(s, view) {
       setText('play-active-label', s.activePlayer > 0
         ? `Faceoff: ${(s.activePlayer === 1 ? s.team1.name : s.team2.name)} answering`
         : 'Faceoff');
+    } else if (s.phase === 'control') {
+      setText('play-active-label', s.activePlayer > 0
+        ? `Control won: ${(s.activePlayer === 1 ? s.team1.name : s.team2.name)}`
+        : 'Control won');
     } else if (s.stealChanceActive) {
       setText('play-active-label', s.activePlayer > 0
         ? `Steal chance: ${(s.activePlayer === 1 ? s.team1.name : s.team2.name)}`
@@ -95,17 +99,24 @@ function updateViewContent(s, view) {
     setText('play-question', round ? round.question : '');
     const contestEl = document.getElementById('play-control-status');
     if (contestEl) {
+      let showControlStatus = false;
       if (s.phase === 'faceoff') {
         contestEl.textContent = s.controlContestActive ? 'Beat the first answer' : 'Faceoff active';
+        showControlStatus = true;
+      } else if (s.phase === 'control') {
+        contestEl.textContent = 'Swap team if passing, then start play';
+        showControlStatus = true;
       } else if (s.stealChanceActive) {
         contestEl.textContent = 'One guess for the steal';
+        showControlStatus = true;
       } else {
-        contestEl.textContent = 'Control challenge active';
+        contestEl.textContent = '';
       }
-      contestEl.classList.toggle('hidden', s.phase !== 'faceoff' && !s.controlContestActive && !s.stealChanceActive);
+      contestEl.style.display = showControlStatus ? '' : 'none';
     }
+    renderPrimaryPlayAction(s);
     renderStrikes(s.strikes);
-    renderAnswerList(round ? round.answers : []);
+    renderAnswerList(round ? round.answers : [], s.phase === 'control');
   }
 
   if (view === 'roundover') {
@@ -164,24 +175,47 @@ function beginRound() {
 }
 
 // ── Answers ───────────────────────────────────────────────────────────────────
-function renderAnswerList(answers) {
+function renderAnswerList(answers, lockReveals = false) {
   const list = document.getElementById('answer-list');
   if (!answers.length) { list.innerHTML = ''; return; }
 
   list.innerHTML = answers.map((a, i) => `
-    <div class="answer-row ${a.revealed ? 'revealed' : ''}">
+    <div class="answer-row ${a.revealed ? 'revealed' : ''} ${lockReveals && !a.revealed ? 'locked' : ''}">
       <div class="answer-num">${i + 1}</div>
       <div class="answer-text">${escHtml(a.text)}</div>
       <div class="answer-pts">${a.points}</div>
       ${a.revealed
         ? '<span class="revealed-check">✓</span>'
-        : `<button class="btn btn-blue reveal-btn" onclick="showRevealModal(${i})">REVEAL</button>`
+        : `<button class="btn btn-blue reveal-btn" onclick="showRevealModal(${i})" ${lockReveals ? 'disabled' : ''}>REVEAL</button>`
       }
     </div>`).join('');
 }
 
+function renderPrimaryPlayAction(s) {
+  const btn = document.getElementById('btn-strike-action');
+  if (!btn) return;
+
+  if (s.phase === 'control') {
+    btn.textContent = '▶ START PLAY';
+    btn.className = 'btn btn-blue full-btn strike-big';
+  } else {
+    btn.textContent = '✗ STRIKE';
+    btn.className = 'btn btn-strike full-btn strike-big';
+  }
+}
+
+function handlePrimaryPlayAction() {
+  if (!state) return;
+  if (state.phase === 'control') {
+    emit('game:startPlay');
+    return;
+  }
+  emit('game:addStrike');
+}
+
 function showRevealModal(answerIndex) {
   if (!state) return;
+  if (state.phase === 'control') return;
   const round = state.rounds[state.currentRoundIndex];
   if (!round || !round.answers || !round.answers[answerIndex]) return;
 

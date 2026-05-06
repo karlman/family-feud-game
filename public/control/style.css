@@ -272,6 +272,14 @@ html, body {
   opacity: 0.65;
 }
 
+.answer-row.locked {
+  opacity: 0.45;
+}
+
+.answer-row.locked .reveal-btn {
+  opacity: 0.45;
+}
+
 .answer-num {
   width: 26px; height: 26px; border-radius: 50%;
   background: var(--border); color: var(--text);

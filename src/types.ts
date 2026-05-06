@@ -19,7 +19,7 @@ export interface Team {
   score: number;
 }
 
-export type GamePhase = 'pregame' | 'idle' | 'buzzin' | 'faceoff' | 'playing' | 'roundover' | 'gameover';
+export type GamePhase = 'pregame' | 'idle' | 'buzzin' | 'faceoff' | 'control' | 'playing' | 'roundover' | 'gameover';
 export type ActivePlayer = 0 | 1 | 2;
 
 export interface GameState {
@@ -44,6 +44,7 @@ export interface ClientToServerEvents {
   'game:setTeams':        (data: { team1: string; team2: string }) => void;
   'game:startBuzzin':     () => void;
   'game:setActivePlayer': (player: ActivePlayer) => void;
+  'game:startPlay':       () => void;
   'game:revealAnswer':    (index: number) => void;
   'game:revealRoundOverAnswer': () => void;
   'game:addStrike':       () => void;
