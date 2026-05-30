@@ -1,4 +1,5 @@
 const socket = io();
+let lastSeenVersion = null;
 
 function scaleBoard() {
   const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
@@ -6,6 +7,28 @@ function scaleBoard() {
 }
 window.addEventListener('resize', scaleBoard);
 scaleBoard();
+
+// Recalculate scale after a brief delay to catch fullscreen/maximize events
+setTimeout(scaleBoard, 500);
+setTimeout(scaleBoard, 1000);
+
+// Auto-reload when version changes (code updated on server)
+async function checkVersion() {
+  try {
+    const res = await fetch('/api/version');
+    const data = await res.json();
+    if (lastSeenVersion && lastSeenVersion !== data.version) {
+      console.log(`Version changed from ${lastSeenVersion} to ${data.version}, reloading...`);
+      location.reload();
+      return;
+    }
+    lastSeenVersion = data.version;
+  } catch (err) {
+    console.error('Failed to check version:', err);
+  }
+}
+setInterval(checkVersion, 5000); // Check every 5 seconds
+checkVersion(); // Check immediately on load
 
 let renderedRoundIndex = -1;
 let renderedAnswerCount = 0;
@@ -15,6 +38,7 @@ let renderedIdleBoard = false;
 socket.on('connect',       () => console.log('Board connected'));
 socket.on('disconnect',    () => console.log('Board disconnected'));
 socket.on('state:update',  renderState);
+socket.on('board:reload',  () => location.reload());
 
 loadVersionBadge('gameboard');
 

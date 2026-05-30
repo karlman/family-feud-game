@@ -57,10 +57,12 @@ export interface ClientToServerEvents {
   'game:playSound':            (sound: string) => void;
   'game:beginRound':           (index: number) => void;
   'game:acknowledgeGameOver':  () => void;
+  'board:reload':              () => void;
 }
 
 export interface ServerToClientEvents {
   'state:update':    (state: GameState) => void;
   'arduino:ringer':  (player: 1 | 2) => void;
   'sound:play':      (sound: string) => void;
+  'board:reload':    () => void;
 }

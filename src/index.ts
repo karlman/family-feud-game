@@ -108,6 +108,7 @@ io.on('connection', socket => {
   socket.on('game:resetRound',            () => game.resetRound());
   socket.on('game:resetGame',             () => game.resetGame());
   socket.on('game:playSound',             sound => playSound(sound));
+  socket.on('board:reload',               () => io.emit('board:reload'));
 
   socket.on('disconnect', () => console.log(`Client disconnected: ${socket.id}`));
 });
