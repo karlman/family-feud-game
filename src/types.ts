@@ -38,7 +38,14 @@ export interface GameState {
   usedRoundIndices: number[];
 }
 
+export type DemoAction = 'buzz1' | 'buzz2' | 'strike' | 'win1' | 'win2' | 'reset';
+
 export interface ClientToServerEvents {
+  'arduino:sim_ringer':   (player: 1 | 2) => void;
+  'demo:start':           () => void;
+  'demo:stop':            () => void;
+  'demo:action':          (action: DemoAction) => void;
+  'demo:strike_cycle':    (player: 1 | 2) => void;
   'game:load':            (data: GameFile) => void;
   'game:loadSet':         (data: { setId: number; startRoundIndex: number }) => void;
   'game:setTeams':        (data: { team1: string; team2: string }) => void;
@@ -61,8 +68,11 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
-  'state:update':    (state: GameState) => void;
-  'arduino:ringer':  (player: 1 | 2) => void;
-  'sound:play':      (sound: string) => void;
-  'board:reload':    () => void;
+  'state:update':     (state: GameState) => void;
+  'arduino:ringer':   (player: 1 | 2) => void;
+  'arduino:command':  (command: string) => void;
+  'demo:state':         (active: boolean) => void;
+  'demo:strikes_reset': () => void;
+  'sound:play':       (sound: string) => void;
+  'board:reload':     () => void;
 }

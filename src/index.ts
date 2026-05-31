@@ -20,15 +20,22 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // ─── Static files ────────────────────────────────────────────────────────────
 const PUBLIC = path.join(__dirname, '..', 'public');
-app.use('/gameboard', express.static(path.join(PUBLIC, 'gameboard')));
-app.use('/control',   express.static(path.join(PUBLIC, 'control')));
-app.use('/settings',  express.static(path.join(PUBLIC, 'settings')));
+app.use('/gameboard',      express.static(path.join(PUBLIC, 'gameboard')));
+app.use('/control',        express.static(path.join(PUBLIC, 'control')));
+app.use('/settings',       express.static(path.join(PUBLIC, 'settings')));
+app.use('/virtual-podium', express.static(path.join(PUBLIC, 'virtual-podium')));
 app.use(express.json({ limit: '2mb' }));
 
 // ─── Serial / Arduino ────────────────────────────────────────────────────────
 const SERIAL_PORT = process.env.SERIAL_PORT || '/dev/ttyACM0';
 const serial = new SerialManager();
 serial.connect(SERIAL_PORT);
+
+// ─── Arduino broadcast helper ────────────────────────────────────────────────
+function sendArduino(command: string): void {
+  serial.send(command);
+  io.emit('arduino:command', command);
+}
 
 // ─── Game manager ────────────────────────────────────────────────────────────
 const game = new GameManager((state: GameState) => {
@@ -49,29 +56,48 @@ function syncArduino(state: GameState): void {
   switch (state.phase) {
     case 'pregame':
     case 'idle':
-      serial.send('RESET');
+      sendArduino('RESET');
       break;
     case 'buzzin':
-      serial.send('BUZZIN');
+      sendArduino('BUZZIN');
       break;
     case 'faceoff':
     case 'control':
     case 'playing':
-      serial.send(`ACTIVE:${state.activePlayer}`);
-      if (state.strikes > 0) serial.send(`STRIKE:${state.strikes}`);
+      sendArduino(`ACTIVE:${state.activePlayer}`);
       break;
     case 'roundover':
     case 'gameover':
-      if (state.activePlayer > 0) serial.send(`WIN:${state.activePlayer}`);
+      if (state.activePlayer > 0) sendArduino(`WIN:${state.activePlayer}`);
       break;
   }
 }
 
-serial.on('ringer', (player: 1 | 2) => {
+// ─── Demo mode ───────────────────────────────────────────────────────────────
+let demoMode = false;
+let demoResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearDemoTimer(): void {
+  if (demoResetTimer) { clearTimeout(demoResetTimer); demoResetTimer = null; }
+}
+
+function demoBuzzed(player: 1 | 2): void {
+  clearDemoTimer();
+  sendArduino(`ACTIVE:${player}`);
+  playSound('ding');
+  io.emit('arduino:ringer', player);
+  io.emit('demo:strikes_reset');
+  demoResetTimer = setTimeout(() => { if (demoMode) sendArduino('BUZZIN'); }, 3000);
+}
+
+function handleRinger(player: 1 | 2): void {
+  if (demoMode) { demoBuzzed(player); return; }
   game.setActivePlayer(player);
   io.emit('arduino:ringer', player);
   playSound('ding');
-});
+}
+
+serial.on('ringer', handleRinger);
 
 // ─── Socket.IO ───────────────────────────────────────────────────────────────
 io.on('connection', socket => {
@@ -100,7 +126,37 @@ io.on('connection', socket => {
   socket.on('game:startPlay',             () => game.startPlay());
   socket.on('game:revealAnswer',          index => { game.revealAnswer(index); playSound('reveal'); });
   socket.on('game:revealRoundOverAnswer', () => { game.revealRoundOverAnswer(); playSound('reveal'); });
-  socket.on('game:addStrike',             () => { game.addStrike(); playSound('wrong'); });
+  socket.on('game:addStrike', () => {
+    const prev        = game.getState();
+    const prevPlayer  = prev.activePlayer;
+    const prevStrikes = prev.strikes;
+    const willSteal   = prevStrikes === 2
+      && prev.phase === 'playing'
+      && prevPlayer !== 0
+      && !prev.stealChanceActive;
+
+    game.addStrike();
+    playSound('strike');
+    sendArduino(`STRIKE:${Math.min(prevStrikes + 1, 3)}`);
+
+    const playPhases = ['faceoff', 'control', 'playing'];
+    if (willSteal) {
+      // Hold original player lit for 2 s after flash, then switch to steal team
+      setTimeout(() => { sendArduino(`ACTIVE:${prevPlayer}`); }, 800);
+      setTimeout(() => {
+        const s = game.getState();
+        if (s.activePlayer !== 0) sendArduino(`ACTIVE:${s.activePlayer}`);
+      }, 2800);
+    } else {
+      // Restore whoever is active now (handles faceoff switch + normal strikes)
+      setTimeout(() => {
+        const s = game.getState();
+        if (s.activePlayer !== 0 && playPhases.includes(s.phase)) {
+          sendArduino(`ACTIVE:${s.activePlayer}`);
+        }
+      }, 800);
+    }
+  });
   socket.on('game:undoStrike',            () => game.undoStrike());
   socket.on('game:swapActiveTeam',        () => game.swapActiveTeam());
   socket.on('game:awardPoints',           team => { game.awardPoints(team); playSound('winner'); });
@@ -109,6 +165,48 @@ io.on('connection', socket => {
   socket.on('game:resetGame',             () => game.resetGame());
   socket.on('game:playSound',             sound => playSound(sound));
   socket.on('board:reload',               () => io.emit('board:reload'));
+
+  socket.on('arduino:sim_ringer', (player: 1 | 2) => handleRinger(player));
+
+  socket.on('demo:start', () => {
+    demoMode = true;
+    clearDemoTimer();
+    sendArduino('BUZZIN');
+    playSound('theme');
+    io.emit('demo:state', true);
+  });
+
+  socket.on('demo:stop', () => {
+    demoMode = false;
+    clearDemoTimer();
+    sendArduino('RESET');
+    io.emit('demo:state', false);
+  });
+
+  socket.on('demo:strike_cycle', (player: 1 | 2) => {
+    if (!demoMode) return;
+    clearDemoTimer();
+    sendArduino(`ACTIVE:${player}`);
+    playSound('strike');
+  });
+
+  socket.on('demo:action', (action) => {
+    if (!demoMode) return;
+    clearDemoTimer();
+    switch (action) {
+      case 'buzz1': demoBuzzed(1); break;
+      case 'buzz2': demoBuzzed(2); break;
+      case 'strike':
+        sendArduino('STRIKE:3');
+        playSound('strike');
+        io.emit('demo:strikes_reset');
+        demoResetTimer = setTimeout(() => { if (demoMode) sendArduino('BUZZIN'); }, 2500);
+        break;
+      case 'win1': sendArduino('WIN:1'); playSound('winner'); io.emit('demo:strikes_reset'); break;
+      case 'win2': sendArduino('WIN:2'); playSound('winner'); io.emit('demo:strikes_reset'); break;
+      case 'reset': sendArduino('BUZZIN'); io.emit('demo:strikes_reset'); break;
+    }
+  });
 
   socket.on('disconnect', () => console.log(`Client disconnected: ${socket.id}`));
 });

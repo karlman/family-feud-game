@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Podium</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="scene">
+
+    <div class="podium" id="p1">
+      <div class="tower">
+        <button class="buzz-btn" id="btn1">BUZZ</button>
+        <div class="top-light" id="top1"></div>
+      </div>
+      <div class="panel">
+        <div class="front-light-border" id="front1">
+          <canvas id="matrix1"></canvas>
+        </div>
+      </div>
+      <div class="player-label">Player 1</div>
+    </div>
+
+    <div class="podium" id="p2">
+      <div class="tower">
+        <button class="buzz-btn" id="btn2">BUZZ</button>
+        <div class="top-light" id="top2"></div>
+      </div>
+      <div class="panel">
+        <div class="front-light-border" id="front2">
+          <canvas id="matrix2"></canvas>
+        </div>
+      </div>
+      <div class="player-label">Player 2</div>
+    </div>
+
+  </div>
+
+  <div class="status" id="status">Connecting&hellip;</div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

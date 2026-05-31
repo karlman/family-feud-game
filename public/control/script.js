@@ -3,6 +3,7 @@ const socket = io();
 let state = null;
 let selectedRoundIndex = 0;
 let pendingRevealIndex = null;
+let inDemoMode = false;
 
 socket.on('connect',    () => setDot(true));
 socket.on('disconnect', () => setDot(false));
@@ -16,11 +17,21 @@ socket.on('arduino:ringer', player => {
   toast(`🔔 Podium ${player} buzzed in!`);
 });
 
+socket.on('demo:state', active => {
+  inDemoMode = active;
+  if (active) {
+    showView('demo');
+  } else if (state) {
+    applyState(state);
+  }
+});
+
 function emit(event, data) { socket.emit(event, data); }
 
 // ── View routing ──────────────────────────────────────────────────────────────
 function applyState(s) {
   updateStatusStrip(s);
+  if (inDemoMode) return;
   const view = s.phase === 'pregame' ? 'pregame' : (s.phase === 'faceoff' || s.phase === 'control') ? 'playing' : s.phase;
   if (view !== 'playing') hideRevealModal();
   if (view !== 'playing' && view !== 'roundover') hideResetRoundModal();
@@ -391,6 +402,11 @@ function toast(msg, isError = false) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
+
+// ── Demo mode ─────────────────────────────────────────────────────────────────
+function demoStart()        { socket.emit('demo:start'); }
+function demoStop()         { socket.emit('demo:stop');  }
+function demoAction(action) { socket.emit('demo:action', action); }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadVersionBadge('control');
