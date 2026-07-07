@@ -5,3 +5,4 @@ dist/
 .claude/
 data/
 .vscode/
+.ssh/
